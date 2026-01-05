@@ -16,9 +16,10 @@ const NewsSection = () => {
     setArticles(allNews);
   }, [activeTab]);
 
-  const handleReadMore = (id) => {
-    // Navigate to article detail via hash
-    window.location.hash = `#article-${id}`;
+  const handleReadMore = (article) => {
+    // Use slug-based routing
+    const slug = article.seo?.slug || article.slug || `article-${article.id}`;
+    window.location.hash = `#article-${slug}`;
   };
 
   return (
@@ -104,7 +105,7 @@ const NewsSection = () => {
                       </div>
                       
                       <button 
-                        onClick={() => handleReadMore(article.id)}
+                        onClick={() => handleReadMore(article)}
                         className="text-[#5D9CEC] text-xs md:text-sm font-bold flex items-center gap-1 group-hover:gap-2 transition-all"
                       >
                         Read More <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />

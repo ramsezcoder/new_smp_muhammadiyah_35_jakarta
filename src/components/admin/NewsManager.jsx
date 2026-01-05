@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import RichTextEditor from './RichTextEditor';
 import { SITE_INFO } from '@/lib/seo-utils';
+import { generateArticleSEO, generateSlug, calculateCTRScore } from '@/lib/seo-engine';
 
 const NewsManager = ({ user, channel }) => {
   const { toast } = useToast();
@@ -36,7 +37,9 @@ const NewsManager = ({ user, channel }) => {
     readabilityScore: 0,
     seoScore: 0,
     keywordSuggestions: [],
-    aiNotes: []
+    aiNotes: [],
+    lsiKeywords: [],
+    ctrScore: 0
   });
 
   const defaultSeo = {
@@ -47,7 +50,9 @@ const NewsManager = ({ user, channel }) => {
     seoScore: 0,
     readabilityScore: 0,
     keywordSuggestions: [],
-    aiNotes: []
+    aiNotes: [],
+    lsiKeywords: [],
+    ctrScore: 0
   };
 
   const [seoEdited, setSeoEdited] = useState({
@@ -210,48 +215,51 @@ const NewsManager = ({ user, channel }) => {
 
   const runSeoAssistant = () => {
     const text = stripHtmlToText(formData.content);
-    const firstPara = extractFirstParagraph(formData.content) || text;
+    
+    // Use the new SEO engine to generate SEO data
+    const generatedSEO = generateArticleSEO({
+      title: formData.title,
+      content: formData.content,
+      seo: {
+        slug: seoEdited.slug ? seoData.slug : '',
+        seoTitle: seoEdited.seoTitle ? seoData.seoTitle : '',
+        seoDescription: seoEdited.metaDescription ? seoData.metaDescription : '',
+        focusKeyphrase: seoEdited.focusKeyphrase ? seoData.focusKeyphrase : '',
+        lsiKeywords: seoData.lsiKeywords
+      }
+    });
+
     const keywords = extractKeywords(`${formData.title} ${text} ${formData.tags} ${formData.hashtags}`, 8);
-    const suggestedFocus = limitFocusWords((keywords.slice(0, 4).join(' ')) || (formData.title || '').toLowerCase());
-    const suggestedSeoTitle = formData.title ? truncateAtWord(`${formData.title} | SMP Muhammadiyah 35 Jakarta`, 60) : '';
-    const suggestedSlug = sanitizeSlug(formData.title || suggestedFocus || seoData.slug);
-    const baseDescription = formData.excerpt || firstPara || text.slice(0, 240) || formData.title;
-    const summarized = limitMetaDescription(baseDescription);
-    const suggestedMetaDescription = limitMetaDescription(summarized.length < 130 && firstPara ? `${summarized} ${firstPara}` : summarized);
-
-    const finalFocus = seoEdited.focusKeyphrase ? seoData.focusKeyphrase : (seoData.focusKeyphrase || suggestedFocus || '');
-    const finalSeoTitle = seoEdited.seoTitle ? seoData.seoTitle : (seoData.seoTitle || suggestedSeoTitle || '');
-    const finalSlug = seoEdited.slug ? seoData.slug : (seoData.slug || suggestedSlug || '');
-    const finalMeta = seoEdited.metaDescription ? seoData.metaDescription : (seoData.metaDescription || suggestedMetaDescription || '');
-
     const readabilityScore = calculateReadability(text);
     const seoScore = calculateSeoScore({
       title: formData.title,
       contentText: text,
       contentHtml: formData.content,
-      focusKeyphrase: finalFocus,
-      metaDescription: finalMeta,
-      slug: finalSlug,
+      focusKeyphrase: generatedSEO.focusKeyphrase,
+      metaDescription: generatedSEO.seoDescription,
+      slug: generatedSEO.slug,
       featuredImage: formData.featuredImage,
       readabilityScore
     });
 
     const aiNotes = buildAiNotes({
-      focusKeyphrase: finalFocus,
+      focusKeyphrase: generatedSEO.focusKeyphrase,
       title: formData.title,
       contentText: text,
-      metaDescription: finalMeta,
-      slug: finalSlug,
+      metaDescription: generatedSEO.seoDescription,
+      slug: generatedSEO.slug,
       seoScore,
       readabilityScore
     });
 
     setSeoData(prev => ({
       ...prev,
-      focusKeyphrase: finalFocus,
-      seoTitle: finalSeoTitle,
-      slug: finalSlug,
-      metaDescription: finalMeta,
+      focusKeyphrase: generatedSEO.focusKeyphrase,
+      seoTitle: generatedSEO.seoTitle,
+      slug: generatedSEO.slug,
+      metaDescription: generatedSEO.seoDescription,
+      lsiKeywords: generatedSEO.lsiKeywords,
+      ctrScore: generatedSEO.ctrScore,
       readabilityScore,
       seoScore,
       keywordSuggestions: keywords,

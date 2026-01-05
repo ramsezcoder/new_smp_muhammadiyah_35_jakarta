@@ -72,9 +72,14 @@ function App() {
       if (hash === '#admin') {
         setCurrentView('admin');
       } else if (hash.startsWith('#article-')) {
-        const id = parseInt(hash.replace('#article-', ''));
-        setSelectedArticleId(id);
-        setCurrentView('article-detail');
+        const slugOrId = hash.replace('#article-', '');
+        // Try to find by slug first, then by ID
+        const found = news.find(n => (n.seo?.slug || n.slug) === slugOrId) || 
+                     news.find(n => n.id === parseInt(slugOrId));
+        if (found) {
+          setSelectedArticleId(found.id);
+          setCurrentView('article-detail');
+        }
       } else if (hash === '#profile/staff') {
         setCurrentView('staff');
       } else if (hash === '#profile/vision-mission') {
