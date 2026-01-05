@@ -35,7 +35,8 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
-app.use('/api', require('./api/verify-recaptcha'));
+const verifyRecaptchaRouter = require('./api/verify-recaptcha');
+app.use('/api', verifyRecaptchaRouter);
 
 // 404 handler
 app.use((req, res) => {

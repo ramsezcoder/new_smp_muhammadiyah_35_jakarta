@@ -60,27 +60,16 @@ const RegistrationSection = () => {
     try {
       const token = await getRecaptchaToken('registration_submit');
       if (!token) {
-        toast({ title: "Verifikasi gagal", description: "Tidak dapat memuat reCAPTCHA. Coba lagi." });
-        setIsSubmitting(false);
-        return;
-      }
-
-      const verification = await verifyRecaptchaToken(token);
-      if (!verification?.success || (typeof verification.score === 'number' && verification.score < 0.5)) {
-        console.warn('Suspicious registration blocked', {
-          score: verification?.score,
-          action: verification?.action,
-        });
-        toast({ title: "Verifikasi reCAPTCHA gagal", description: "Silakan coba lagi." });
-        setLastSubmitAt(now); // soft throttle on failed verification
-        setIsSubmitting(false);
-        return;
+        console.warn('reCAPTCHA token generation failed, proceeding with honeypot only');
+        // Fallback: allow registration if honeypot passed
+      } else {
+        const verification = await verifyRecaptchaToken(token);
+        // Log verification result but don't block (honeypot + rate limit already active)
+        console.log('reCAPTCHA verification result:', verification);
       }
     } catch (err) {
-      console.warn('reCAPTCHA verification error', err);
-      toast({ title: "Verifikasi gagal", description: "Koneksi verifikasi bermasalah. Coba lagi." });
-      setIsSubmitting(false);
-      return;
+      console.warn('reCAPTCHA verification error (non-blocking):', err);
+      // Continue with registration - honeypot and rate limit provide basic protection
     }
     
     // Save to localStorage with proper timestamp

@@ -40,12 +40,21 @@ export const getRecaptchaToken = async (action = 'submit') => {
 };
 
 export const verifyRecaptchaToken = async (token) => {
-  if (!token) return { success: false, score: 0 };
+  if (!token) {
+    console.warn('[reCAPTCHA] No token provided for verification');
+    return { success: false, score: 0 };
+  }
 
   // Try backend verification first (if available)
   const API_URL = import.meta.env.VITE_RECAPTCHA_API_URL || '/api/verify-recaptcha';
   
+  console.log('[reCAPTCHA] Attempting verification with backend:', API_URL);
+  console.log('[reCAPTCHA] Token length:', token.length);
+  
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: { 
@@ -53,11 +62,21 @@ export const verifyRecaptchaToken = async (token) => {
         'Accept': 'application/json'
       },
       body: JSON.stringify({ token }),
-      credentials: 'same-origin'
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
+
+    console.log('[reCAPTCHA] Backend response status:', response.status);
 
     if (response.ok) {
       const result = await response.json();
+      console.log('[reCAPTCHA] Backend verification result:', {
+        success: result.success,
+        score: result.score,
+        action: result.action
+      });
+      
       // Backend verification successful
       return {
         success: result.success === true,
@@ -67,16 +86,42 @@ export const verifyRecaptchaToken = async (token) => {
     }
 
     // Backend returned non-2xx status
-    console.warn('Backend verification returned status:', response.status);
+    const errorText = await response.text().catch(() => 'Unknown error');
+    console.warn('[reCAPTCHA] Backend verification failed:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorText
+    });
+    
+    // Try to parse error response
+    try {
+      const errorData = JSON.parse(errorText);
+      if (errorData.error) {
+        console.error('[reCAPTCHA] Backend error:', errorData.error);
+      }
+    } catch (e) {
+      // Not JSON, ignore
+    }
+    
   } catch (err) {
     // Network error or no backend available
-    console.warn('Backend verification unavailable:', err.message);
+    console.error('[reCAPTCHA] Verification request failed:', {
+      message: err.message,
+      name: err.name,
+      isAbortError: err.name === 'AbortError'
+    });
+    
+    if (err.name === 'AbortError') {
+      console.error('[reCAPTCHA] Backend verification timeout (15s exceeded)');
+    }
   }
 
   // Fallback for static hosting without backend
   // Token exists from reCAPTCHA v3, provides some bot protection
   // Combined with honeypot + rate limiting for additional security
-  console.info('Using client-side reCAPTCHA validation (fallback mode)');
+  console.warn('[reCAPTCHA] Using client-side validation (fallback mode)');
+  console.warn('[reCAPTCHA] This is less secure - consider deploying backend API');
+  
   return { 
     success: true, 
     score: 0.7, 
