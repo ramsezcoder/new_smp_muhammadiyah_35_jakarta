@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { Send, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { SITE_INFO, PPDB_FAQS, getFAQSchema, getBreadcrumbSchema } from '@/lib/seo-utils';
+import { sanitizeInput, sanitizePhone, isValidPhone } from '@/utils/sanitize';
+import { getRecaptchaToken, verifyRecaptchaToken } from '@/lib/recaptcha';
 
 const RegistrationSection = () => {
   const { toast } = useToast();
@@ -15,14 +17,71 @@ const RegistrationSection = () => {
     nomorWA: '',
     jenisRegistrasi: 'CPMB',
   });
+  const [honeypot, setHoneypot] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastSubmitAt, setLastSubmitAt] = useState(0);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    // Security: sanitize all user input before storing in state
+    if (name === 'nomorWA') {
+      const cleanPhone = sanitizePhone(value);
+      setFormData({ ...formData, [name]: cleanPhone });
+      return;
+    }
+    if (name === 'tanggalLahir') {
+      setFormData({ ...formData, [name]: value });
+      return;
+    }
+    setFormData({ ...formData, [name]: sanitizeInput(value) });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Honeypot: silently ignore bots
+    if (honeypot && honeypot.trim() !== '') return;
+
+    // Basic rate limit: block repeated submissions within 60s
+    const now = Date.now();
+    if (now - lastSubmitAt < 60000) {
+      toast({ title: "Tunggu sebentar", description: "Mohon coba lagi dalam 1 menit." });
+      return;
+    }
+
+    if (!isValidPhone(formData.nomorWA)) {
+      toast({ title: "Nomor WA tidak valid", description: "Gunakan 10-15 digit angka." });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const token = await getRecaptchaToken('registration_submit');
+      if (!token) {
+        toast({ title: "Verifikasi gagal", description: "Tidak dapat memuat reCAPTCHA. Coba lagi." });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const verification = await verifyRecaptchaToken(token);
+      if (!verification?.success || (typeof verification.score === 'number' && verification.score < 0.5)) {
+        console.warn('Suspicious registration blocked', {
+          score: verification?.score,
+          action: verification?.action,
+        });
+        toast({ title: "Verifikasi reCAPTCHA gagal", description: "Silakan coba lagi." });
+        setLastSubmitAt(now); // soft throttle on failed verification
+        setIsSubmitting(false);
+        return;
+      }
+    } catch (err) {
+      console.warn('reCAPTCHA verification error', err);
+      toast({ title: "Verifikasi gagal", description: "Koneksi verifikasi bermasalah. Coba lagi." });
+      setIsSubmitting(false);
+      return;
+    }
     
     // Save to localStorage with proper timestamp
     const registrants = JSON.parse(localStorage.getItem('registrants') || '[]');
@@ -37,6 +96,8 @@ const RegistrationSection = () => {
     localStorage.setItem('registrants', JSON.stringify(registrants));
 
     setIsSuccess(true);
+    setLastSubmitAt(now);
+    setIsSubmitting(false);
     toast({
       title: "Pendaftaran Berhasil!",
       description: "Silakan lanjutkan konfirmasi via WhatsApp.",
@@ -120,6 +181,16 @@ const RegistrationSection = () => {
               {!isSuccess ? (
                 <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
                   <h3 className="font-poppins text-xl md:text-2xl font-bold text-gray-800 text-center mb-4 md:mb-6">Formulir Pendaftaran</h3>
+                  {/* Honeypot field for spam mitigation */}
+                  <input
+                    type="text"
+                    name="_honey"
+                    value={honeypot}
+                    onChange={e => setHoneypot(e.target.value)}
+                    className="hidden"
+                    tabIndex="-1"
+                    autoComplete="off"
+                  />
                   
                   <div>
                     <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2">Nama Lengkap Siswa</label>
@@ -129,6 +200,7 @@ const RegistrationSection = () => {
                       required
                       value={formData.namaLengkap}
                       onChange={handleChange}
+                      maxLength={100}
                       className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border border-gray-200 focus:border-[#5D9CEC] focus:ring-2 focus:ring-[#5D9CEC]/20 outline-none transition-all bg-gray-50 focus:bg-white text-sm md:text-base"
                       placeholder="Masukkan nama lengkap"
                     />
@@ -142,6 +214,7 @@ const RegistrationSection = () => {
                       required
                       value={formData.asalSekolah}
                       onChange={handleChange}
+                      maxLength={100}
                       className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border border-gray-200 focus:border-[#5D9CEC] focus:ring-2 focus:ring-[#5D9CEC]/20 outline-none transition-all bg-gray-50 focus:bg-white text-sm md:text-base"
                       placeholder="Nama sekolah SD/MI asal"
                     />
@@ -167,6 +240,7 @@ const RegistrationSection = () => {
                       required
                       value={formData.orangTua}
                       onChange={handleChange}
+                      maxLength={100}
                       className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border border-gray-200 focus:border-[#5D9CEC] focus:ring-2 focus:ring-[#5D9CEC]/20 outline-none transition-all bg-gray-50 focus:bg-white text-sm md:text-base"
                       placeholder="Nama orang tua"
                     />
@@ -180,6 +254,8 @@ const RegistrationSection = () => {
                       required
                       value={formData.nomorWA}
                       onChange={handleChange}
+                      pattern="[0-9]+"
+                      maxLength={15}
                       className="w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl border border-gray-200 focus:border-[#5D9CEC] focus:ring-2 focus:ring-[#5D9CEC]/20 outline-none transition-all bg-gray-50 focus:bg-white text-sm md:text-base"
                       placeholder="08xxxxxxxxxx"
                     />
@@ -215,6 +291,7 @@ const RegistrationSection = () => {
 
                   <button
                     type="submit"
+                    disabled={isSubmitting}
                     className="w-full bg-[#5D9CEC] text-white py-3 md:py-4 rounded-xl font-bold text-base md:text-lg hover:bg-[#4A89DC] shadow-lg hover:shadow-xl transition-all"
                   >
                     Kirim Pendaftaran
