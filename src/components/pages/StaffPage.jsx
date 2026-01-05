@@ -1,0 +1,88 @@
+import React from 'react';
+import { Helmet } from 'react-helmet';
+import { motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
+
+const StaffPage = () => {
+  const staffMembers = [
+    { name: "R. Agung Budi Laksono", role: "Waka Sarpras", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop" },
+    { name: "Rubiyatun", role: "Waka Kesiswaan", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop" },
+    { name: "Istiana", role: "Waka Kurikulum", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop" },
+    { name: "Rini Yuni Astuti", role: "Waka Humas", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop" },
+    { name: "Suparliyanto", role: "PLT Kasubag TU", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop" },
+    { name: "Sri Rahayu", role: "Guru Kimia", image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=300&h=300&fit=crop" },
+    { name: "Boini", role: "Guru Matematika", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&h=300&fit=crop" },
+    { name: "Arief Teguh Rahardjo", role: "Guru Matematika", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&h=300&fit=crop" },
+    { name: "Dahrotun", role: "Guru Bahasa Indonesia", image: "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=300&h=300&fit=crop" },
+    { name: "Dwijatno Hamardianto", role: "Guru BK", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop" },
+    { name: "Agus Soedarsono", role: "Guru Matematika", image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&h=300&fit=crop" },
+    { name: "Rahayu Wuryaningsih", role: "Guru Bahasa Jawa", image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&h=300&fit=crop" },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-[#E8F4F8] to-white pt-24 pb-20">
+      <Helmet>
+        <title>Guru & Karyawan | SMP Muhammadiyah 35 Jakarta</title>
+        <meta name="description" content="Profil lengkap guru dan karyawan SMP Muhammadiyah 35 Jakarta. Tim pengajar profesional dan berdedikasi." />
+      </Helmet>
+
+      <div className="container mx-auto px-4">
+        {/* Back Button */}
+        <button 
+          onClick={() => window.location.hash = ''}
+          className="flex items-center gap-2 text-gray-600 hover:text-[#5D9CEC] mb-8 transition-colors"
+        >
+          <ArrowLeft size={20} />
+          <span>Kembali ke Beranda</span>
+        </button>
+
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
+          <h1 className="font-poppins text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+            Guru & Karyawan
+          </h1>
+          <p className="text-gray-600 text-lg max-w-3xl mx-auto">
+            Tim pengajar dan tenaga kependidikan profesional yang berdedikasi untuk memberikan pendidikan terbaik bagi siswa-siswi kami
+          </p>
+        </motion.div>
+
+        {/* Staff Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+          {staffMembers.map((staff, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group hover:-translate-y-2"
+            >
+              <div className="aspect-square overflow-hidden bg-gradient-to-br from-[#D4E8F0] to-[#E8F4F8]">
+                <img 
+                  src={staff.image}
+                  alt={staff.name}
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                />
+              </div>
+              <div className="p-5 text-center">
+                <h3 className="font-poppins font-bold text-gray-800 text-lg mb-2">
+                  {staff.name}
+                </h3>
+                <span className="inline-block px-4 py-1 bg-[#E8F4F8] text-[#5D9CEC] rounded-full text-sm font-medium">
+                  {staff.role}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default StaffPage;
