@@ -2,8 +2,8 @@
 declare(strict_types=1);
 require __DIR__ . '/../_bootstrap.php';
 
-// Auth required to read dashboard settings
-require_auth($config, ['Admin','Superadmin','Author']);
+// Auth required: only Admin and Superadmin can read system settings
+require_auth($config, ['Admin','Superadmin']);
 
 try {
   $stmt = $pdo->query('SELECT `key`, `value` FROM settings');

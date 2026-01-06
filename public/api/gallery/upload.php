@@ -6,6 +6,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
   respond(false, 'Method not allowed', [], 405);
 }
 
+// Auth: require Admin or Superadmin to upload gallery images
+require_auth($config, ['Admin','Superadmin']);
+
 $title = trim((string)($_POST['title'] ?? ''));
 $alt = trim((string)($_POST['alt'] ?? ''));
 

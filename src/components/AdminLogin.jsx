@@ -81,7 +81,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 focus:border-[#5D9CEC] focus:ring-2 focus:ring-[#5D9CEC]/20 outline-none transition-all"
-                  placeholder="admin@smpmuh35.id"
+                  placeholder="admin@smpmuh35.sch.id"
                   required
                 />
               </div>

@@ -1,9 +1,29 @@
+// Helper to get Authorization headers with Bearer token
+function getHeaders() {
+  const sessionStr = localStorage.getItem('app_session');
+  const headers = { 'Content-Type': 'application/json' };
+  if (sessionStr) {
+    try {
+      const session = JSON.parse(sessionStr);
+      if (session.token) {
+        headers['Authorization'] = `Bearer ${session.token}`;
+      }
+    } catch (e) {
+      console.error('Failed to parse session:', e);
+    }
+  }
+  return headers;
+}
+
 export async function listVideos({ page = 1, limit = 100, includeUnpublished = true } = {}) {
   const params = new URLSearchParams();
   params.set('page', String(page));
   params.set('limit', String(limit));
   params.set('published', includeUnpublished ? '0' : '1');
-  const res = await fetch(`/api/videos/list.php?${params.toString()}`, { credentials: 'include' });
+  const res = await fetch(`/api/videos/list.php?${params.toString()}`, { 
+    headers: getHeaders(),
+    credentials: 'include' 
+  });
   if (!res.ok) throw new Error(`List failed: ${res.status}`);
   const json = await res.json();
   if (!json.success) throw new Error(json.message || 'List failed');
@@ -13,7 +33,7 @@ export async function listVideos({ page = 1, limit = 100, includeUnpublished = t
 export async function createVideo({ title, youtube_id, thumbnail_url = '', description = '' }) {
   const res = await fetch('/api/videos/create.php', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders(),
     body: JSON.stringify({ title, youtube_id, thumbnail_url, description }),
     credentials: 'include'
   });
@@ -26,7 +46,7 @@ export async function createVideo({ title, youtube_id, thumbnail_url = '', descr
 export async function updateVideo({ id, title, youtube_id, thumbnail_url = '', description = '' }) {
   const res = await fetch('/api/videos/update.php', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders(),
     body: JSON.stringify({ id, title, youtube_id, thumbnail_url, description }),
     credentials: 'include'
   });
@@ -39,7 +59,7 @@ export async function updateVideo({ id, title, youtube_id, thumbnail_url = '', d
 export async function deleteVideo(id) {
   const res = await fetch('/api/videos/delete.php', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders(),
     body: JSON.stringify({ id }),
     credentials: 'include'
   });
@@ -52,7 +72,7 @@ export async function deleteVideo(id) {
 export async function reorderVideos(ids) {
   const res = await fetch('/api/videos/reorder.php', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders(),
     body: JSON.stringify({ ids }),
     credentials: 'include'
   });

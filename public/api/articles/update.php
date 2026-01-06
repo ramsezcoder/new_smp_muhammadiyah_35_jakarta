@@ -19,6 +19,7 @@ $tags = isset($_POST['tags']) ? json_encode((array)json_decode($_POST['tags'], t
 $status = trim((string)($_POST['status'] ?? 'draft'));
 $seoTitle = trim((string)($_POST['seo_title'] ?? ''));
 $seoDescription = trim((string)($_POST['seo_description'] ?? ''));
+$featuredImageAlt = trim((string)($_POST['featured_image_alt'] ?? ''));
 $keepImage = isset($_POST['keep_image']) ? (bool)(int)$_POST['keep_image'] : true;
 
 if ($id <= 0 || $title === '' || $content === '') {
@@ -56,12 +57,14 @@ try {
   $pdo->beginTransaction();
   $publishedAt = ($status === 'published') ? date('Y-m-d H:i:s') : null;
   
-  $stmt = $pdo->prepare('UPDATE articles SET title = ?, slug = ?, content_html = ?, excerpt = ?, featured_image = ?, category = ?, tags_json = ?, status = ?, seo_title = ?, seo_description = ?, published_at = ? WHERE id = ?');
-  $stmt->execute([$title, $slug, $content, $excerpt, $newImage, $category, $tags, $status, $seoTitle, $seoDescription, $publishedAt, $id]);
+  $stmt = $pdo->prepare('UPDATE articles SET title = ?, slug = ?, content_html = ?, excerpt = ?, featured_image = ?, featured_image_alt = ?, category = ?, tags_json = ?, status = ?, seo_title = ?, seo_description = ?, published_at = ? WHERE id = ?');
+  $stmt->execute([$title, $slug, $content, $excerpt, $newImage, $featuredImageAlt, $category, $tags, $status, $seoTitle, $seoDescription, $publishedAt, $id]);
   $pdo->commit();
   
   respond(true, 'Article updated', [
-    'featured_image_url' => $newImage ? '/uploads/articles/' . $newImage : null
+    'featured_image' => $newImage,
+    'featured_image_url' => $newImage ? '/uploads/articles/' . $newImage : null,
+    'featured_image_alt' => $featuredImageAlt
   ]);
 } catch (Throwable $e) {
   if ($pdo->inTransaction()) { $pdo->rollBack(); }

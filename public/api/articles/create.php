@@ -18,6 +18,7 @@ $tags = isset($_POST['tags']) ? json_encode((array)json_decode($_POST['tags'], t
 $status = trim((string)($_POST['status'] ?? 'draft'));
 $seoTitle = trim((string)($_POST['seo_title'] ?? ''));
 $seoDescription = trim((string)($_POST['seo_description'] ?? ''));
+$featuredImageAlt = trim((string)($_POST['featured_image_alt'] ?? ''));
 
 if ($title === '' || $content === '') {
   respond(false, 'Title and content required', [], 400);
@@ -49,15 +50,17 @@ try {
   $maxSort = (int)$pdo->query('SELECT IFNULL(MAX(sort_order), 0) FROM articles')->fetchColumn();
   $publishedAt = ($status === 'published') ? date('Y-m-d H:i:s') : null;
   
-  $stmt = $pdo->prepare('INSERT INTO articles (title, slug, content_html, excerpt, featured_image, category, tags_json, status, seo_title, seo_description, author_id, author_name, sort_order, published_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-  $stmt->execute([$title, $slug, $content, $excerpt, $featuredImage, $category, $tags, $status, $seoTitle, $seoDescription, $user['sub'], $user['name'] ?? 'Unknown', $maxSort + 1, $publishedAt]);
+  $stmt = $pdo->prepare('INSERT INTO articles (title, slug, content_html, excerpt, featured_image, featured_image_alt, category, tags_json, status, seo_title, seo_description, author_id, author_name, sort_order, published_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+  $stmt->execute([$title, $slug, $content, $excerpt, $featuredImage, $featuredImageAlt, $category, $tags, $status, $seoTitle, $seoDescription, $user['sub'], $user['name'] ?? 'Unknown', $maxSort + 1, $publishedAt]);
   $id = (int)$pdo->lastInsertId();
   $pdo->commit();
   
   respond(true, 'Article created', [
     'id' => $id,
     'slug' => $slug,
-    'featured_image_url' => $featuredImage ? '/uploads/articles/' . $featuredImage : null
+    'featured_image' => $featuredImage,
+    'featured_image_url' => $featuredImage ? '/uploads/articles/' . $featuredImage : null,
+    'featured_image_alt' => $featuredImageAlt
   ]);
 } catch (Throwable $e) {
   if ($pdo->inTransaction()) { $pdo->rollBack(); }

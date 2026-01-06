@@ -6,8 +6,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
   respond(false, 'Method not allowed', [], 405);
 }
 
-// Auth: only Admin/Superadmin can update settings
-require_auth($config, ['Admin','Superadmin']);
+// Auth: only Superadmin can update system settings
+require_auth($config, ['Superadmin']);
 
 $input = json_decode(file_get_contents('php://input') ?: 'null', true) ?: [];
 $allowed = [

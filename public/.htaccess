@@ -1,6 +1,10 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   
+  # Prevent PHP execution in uploads directory
+  RewriteCond %{REQUEST_URI} ^/uploads/
+  RewriteRule \.(?:php[345]?|phtml|phar|shtml)$ - [NC,F,L]
+  
   # Don't rewrite if it's a real file or directory
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
