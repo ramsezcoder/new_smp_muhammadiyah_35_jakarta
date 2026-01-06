@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { db } from '@/lib/db';
 
 const StaffPage = () => {
-  const staffMembers = [
+  const defaultStaff = [
     { name: "R. Agung Budi Laksono", role: "Waka Sarpras", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop" },
     { name: "Rubiyatun", role: "Waka Kesiswaan", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop" },
     { name: "Istiana", role: "Waka Kurikulum", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop" },
@@ -20,7 +21,25 @@ const StaffPage = () => {
     { name: "Rahayu Wuryaningsih", role: "Guru Bahasa Jawa", image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&h=300&fit=crop" },
   ];
 
+  const [staffMembers, setStaffMembers] = useState(defaultStaff);
+  const [usingFallback, setUsingFallback] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const stored = db.getStaffProfiles().filter((staff) => staff.active !== false);
+    if (stored.length) {
+      setStaffMembers(stored.map((item, idx) => ({
+        id: item.id || idx,
+        name: item.name,
+        role: item.position || item.role || 'Staf Sekolah',
+        image: item.photo || item.image || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop',
+      })));
+      setUsingFallback(false);
+    } else {
+      setStaffMembers(defaultStaff);
+      setUsingFallback(true);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E8F4F8] to-white pt-24 pb-20">
@@ -55,34 +74,43 @@ const StaffPage = () => {
         </motion.div>
 
         {/* Staff Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-          {staffMembers.map((staff, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group hover:-translate-y-2"
-            >
-              <div className="aspect-square overflow-hidden bg-gradient-to-br from-[#D4E8F0] to-[#E8F4F8]">
-                <img 
-                  src={staff.image}
-                  alt={staff.name}
-                  loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-              </div>
-              <div className="p-5 text-center">
-                <h3 className="font-poppins font-bold text-gray-800 text-lg mb-2">
-                  {staff.name}
-                </h3>
-                <span className="inline-block px-4 py-1 bg-[#E8F4F8] text-[#5D9CEC] rounded-full text-sm font-medium">
-                  {staff.role}
-                </span>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        {staffMembers.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-10 text-center text-gray-500">
+            Belum ada data guru & karyawan yang ditambahkan.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+            {staffMembers.map((staff, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group hover:-translate-y-2"
+              >
+                <div className="aspect-square overflow-hidden bg-gradient-to-br from-[#D4E8F0] to-[#E8F4F8]">
+                  <img 
+                    src={staff.image}
+                    alt={staff.name}
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    onError={(e) => {
+                      e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23e5e7eb" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="16" fill="%239ca3af" text-anchor="middle" dominant-baseline="middle"%3EImage not available%3C/text%3E%3C/svg%3E';
+                    }}
+                  />
+                </div>
+                <div className="p-5 text-center">
+                  <h3 className="font-poppins font-bold text-gray-800 text-lg mb-2">
+                    {staff.name}
+                  </h3>
+                  <span className="inline-block px-4 py-1 bg-[#E8F4F8] text-[#5D9CEC] rounded-full text-sm font-medium">
+                    {staff.role}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -3,6 +3,17 @@
 import importedPosts from '@/data/importedPosts.json';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1509062522246-3755977927d7';
+const GALLERY_KEY = 'gallery_uploads';
+const STAFF_KEY = 'staff_profiles';
+
+const slugify = (text = '') => text
+  .toString()
+  .toLowerCase()
+  .trim()
+  .replace(/[^a-z0-9\s-]/g, '')
+  .replace(/\s+/g, '-')
+  .replace(/-+/g, '-')
+  .replace(/^-+|-+$/g, '');
 
 const normalizeDate = (value) => {
   if (!value) return new Date().toISOString();
@@ -27,6 +38,16 @@ const extractFirstImage = (html) => {
 };
 
 const slugKey = (article) => (article?.seo?.slug || article?.slug || String(article?.id || '')).toLowerCase();
+
+const buildSeoFilename = (name, uploadedAt) => {
+  const base = slugify(name || 'gallery');
+  const stamp = uploadedAt ? new Date(uploadedAt).getTime() : Date.now();
+  return `${base || 'gallery'}-${stamp}.webp`;
+};
+
+const normalizeOrder = (items = []) => items
+  .map((item, idx) => ({ ...item, order: typeof item.order === 'number' ? item.order : idx }))
+  .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
 const mergeNews = (base = [], incoming = []) => {
   const map = new Map();
@@ -295,6 +316,52 @@ export const db = {
     db.logActivity(userId, 'DELETE_NEWS', `Deleted article ID: ${id}`);
   },
 
+  // --- GALLERY ---
+  getGallery: () => normalizeOrder(db._getData(GALLERY_KEY, [])),
+
+  saveGalleryItem: (fileData, userId) => {
+    const current = db.getGallery();
+    const uploadedAt = fileData.uploadedAt || new Date().toISOString();
+    const filename = buildSeoFilename(fileData.name || fileData.filename, uploadedAt);
+    const item = {
+      ...fileData,
+      id: fileData.id || Date.now(),
+      name: fileData.name || fileData.filename || 'Galeri Sekolah',
+      filename,
+      uploadedAt,
+      order: typeof fileData.order === 'number' ? fileData.order : current.length,
+    };
+    const updated = normalizeOrder([...current, item]);
+    db._saveData(GALLERY_KEY, updated);
+    db.logActivity(userId, 'UPLOAD_GALLERY', `Uploaded gallery image: ${filename}`);
+    return item;
+  },
+
+  renameGalleryItem: (id, newName, userId) => {
+    const items = db.getGallery();
+    const idx = items.findIndex((img) => img.id === id);
+    if (idx === -1) return null;
+    const item = items[idx];
+    const filename = buildSeoFilename(newName, item.uploadedAt);
+    items[idx] = { ...item, name: newName, filename };
+    db._saveData(GALLERY_KEY, items);
+    db.logActivity(userId, 'RENAME_GALLERY', `Renamed gallery image to ${filename}`);
+    return items[idx];
+  },
+
+  deleteGalleryItem: (id, userId) => {
+    const items = db.getGallery().filter((img) => img.id !== id);
+    db._saveData(GALLERY_KEY, normalizeOrder(items));
+    db.logActivity(userId, 'DELETE_GALLERY', `Deleted gallery image ID: ${id}`);
+  },
+
+  reorderGallery: (orderedItems = [], userId) => {
+    const normalized = normalizeOrder(orderedItems.map((item, idx) => ({ ...item, order: idx })));
+    db._saveData(GALLERY_KEY, normalized);
+    db.logActivity(userId, 'REORDER_GALLERY', 'Updated gallery order');
+    return normalized;
+  },
+
   // --- MEDIA ---
   getMedia: () => db._getData('app_media', []),
   
@@ -313,6 +380,45 @@ export const db = {
     const media = db.getMedia().filter(m => m.id !== id);
     db._saveData('app_media', media);
     db.logActivity(userId, 'DELETE_MEDIA', `Deleted media ID: ${id}`);
+  },
+
+  // --- STAFF ---
+  getStaffProfiles: () => normalizeOrder(db._getData(STAFF_KEY, [])),
+
+  saveStaffProfile: (profile, userId) => {
+    const current = db.getStaffProfiles();
+    const now = new Date().toISOString();
+    if (profile.id) {
+      const idx = current.findIndex((p) => p.id === profile.id);
+      if (idx !== -1) {
+        current[idx] = { ...current[idx], ...profile, updatedAt: now };
+      }
+    } else {
+      current.push({
+        ...profile,
+        id: Date.now(),
+        createdAt: now,
+        updatedAt: now,
+        order: typeof profile.order === 'number' ? profile.order : current.length,
+      });
+    }
+    const normalized = normalizeOrder(current);
+    db._saveData(STAFF_KEY, normalized);
+    db.logActivity(userId, 'UPSERT_STAFF', `Saved staff profile: ${profile.name}`);
+    return normalized;
+  },
+
+  deleteStaffProfile: (id, userId) => {
+    const filtered = db.getStaffProfiles().filter((p) => p.id !== id);
+    db._saveData(STAFF_KEY, normalizeOrder(filtered));
+    db.logActivity(userId, 'DELETE_STAFF', `Deleted staff profile ID: ${id}`);
+  },
+
+  reorderStaffProfiles: (orderedProfiles = [], userId) => {
+    const normalized = normalizeOrder(orderedProfiles.map((p, idx) => ({ ...p, order: idx })));
+    db._saveData(STAFF_KEY, normalized);
+    db.logActivity(userId, 'REORDER_STAFF', 'Updated staff order');
+    return normalized;
   },
 
   // --- REGISTRANTS ---

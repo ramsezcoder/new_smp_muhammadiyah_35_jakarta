@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, X } from 'lucide-react';
+import { db } from '@/lib/db';
 
 const PhotoGallery = () => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -24,20 +25,18 @@ const PhotoGallery = () => {
   ];
 
   useEffect(() => {
-    // Load uploaded images from localStorage and merge with defaults
-    try {
-      const uploadedImages = JSON.parse(localStorage.getItem('gallery_uploads') || '[]');
-      const uploadedPhotos = uploadedImages.map((img, idx) => ({
-        id: img.id || 1000 + idx,
-        title: img.name || img.filename || 'Uploaded Photo',
+    const stored = db.getGallery();
+    if (stored.length) {
+      setPhotos(stored.map((img, idx) => ({
+        id: img.id || idx,
+        title: img.name || img.filename || 'Dokumentasi Sekolah',
         category: 'Galeri Unggahan',
         image: img.dataUrl || img.originalUrl || img.url
-      }));
-      setPhotos([...uploadedPhotos, ...defaultPhotos]);
-    } catch (err) {
-      console.warn('[gallery] Failed to load uploaded images:', err);
-      setPhotos(defaultPhotos);
+      })).concat(defaultPhotos));
+      return;
     }
+
+    setPhotos(defaultPhotos);
   }, []);
 
   const navigate = useNavigate();

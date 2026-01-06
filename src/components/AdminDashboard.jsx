@@ -14,6 +14,7 @@ import DashboardHome from '@/components/admin/DashboardHome';
 import SettingsManager from '@/components/admin/SettingsManager';
 import RegistrantManager from '@/components/admin/RegistrantManager';
 import GalleryManager from '@/components/admin/GalleryManager';
+import StaffManager from '@/components/admin/StaffManager';
 
 // Temporary placeholders for incomplete components
 const PagesManager = () => <div className="p-8 text-center text-gray-500">Pages Management Module (Coming Soon)</div>;
@@ -75,6 +76,12 @@ const AdminDashboard = ({ onLogout }) => {
       label: 'Registrants', 
       icon: Users, 
       roles: ['Superadmin', 'Admin'] 
+    },
+    { 
+      id: 'staff_manager', 
+      label: 'Staff Profile Manager', 
+      icon: Users, 
+      roles: ['Superadmin'] 
     },
     { 
       id: 'pages', 
@@ -171,6 +178,7 @@ const AdminDashboard = ({ onLogout }) => {
           {activeTab === 'news_school' && <NewsManager user={user} channel="school" />}
           {activeTab === 'news_student' && <NewsManager user={user} channel="student" />}
           {activeTab === 'registrants' && <RegistrantManager user={user} />}
+          {activeTab === 'staff_manager' && <StaffManager user={user} />}
           {activeTab === 'settings' && <SettingsManager user={user} />}
           {activeTab === 'media' && <GalleryManager user={user} />}
           {activeTab === 'pages' && <PagesManager user={user} />}

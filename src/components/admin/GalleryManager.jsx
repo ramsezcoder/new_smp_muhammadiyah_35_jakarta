@@ -1,18 +1,120 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Upload, Trash2, Image, Loader } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Upload, Trash2, Image, Loader, Pencil, GripVertical, Eye, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { MESSAGES } from '@/config/staticMode';
+import { db } from '@/lib/db';
+
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_SIZE = 4 * 1024 * 1024;
 
 const GalleryManager = ({ user }) => {
   const { toast } = useToast();
   const [images, setImages] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [modalImage, setModalImage] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
   const fileInputRef = useRef(null);
+  const dragIndex = useRef(null);
+  const dragOver = useRef(null);
 
-  // Only superadmin can access
   const isSuperadmin = user?.role === 'Superadmin';
+
+  useEffect(() => {
+    setImages(db.getGallery());
+    setLoading(false);
+  }, []);
+
+  const toDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => resolve(event.target?.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const handleFileSelect = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setUploading(true);
+
+    try {
+      const additions = [];
+      for (const file of files) {
+        if (!ACCEPTED_TYPES.includes(file.type)) {
+          toast({ variant: 'destructive', title: 'Format tidak didukung', description: 'Gunakan JPG, PNG, atau WebP' });
+          continue;
+        }
+        if (file.size > MAX_SIZE) {
+          toast({ variant: 'destructive', title: 'File terlalu besar', description: 'Maksimal 4MB per gambar' });
+          continue;
+        }
+
+        const baseName = file.name.replace(/\.[^.]+$/, '');
+        const dataUrl = await toDataUrl(file);
+
+        const saved = db.saveGalleryItem({
+          name: baseName,
+          filename: file.name,
+          dataUrl,
+          originalUrl: dataUrl,
+          url: dataUrl,
+          size: file.size,
+        }, user?.id);
+        additions.push(saved);
+      }
+
+      if (additions.length) {
+        setImages(db.getGallery());
+        toast({ title: 'Upload berhasil', description: `${additions.length} gambar disimpan` });
+      }
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Upload gagal', description: err.message || 'Terjadi kesalahan' });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteImage = (imageId) => {
+    const target = images.find((img) => img.id === imageId);
+    if (!target) return;
+    const confirmed = window.confirm('Apakah Anda yakin ingin menghapus foto ini?');
+    if (!confirmed) return;
+    db.deleteGalleryItem(imageId, user?.id);
+    setImages(db.getGallery());
+    if (modalImage?.id === imageId) setModalImage(null);
+    toast({ title: 'Foto dihapus', description: 'Gambar sudah dihapus dari galeri' });
+  };
+
+  const handleRename = () => {
+    if (!modalImage || !renameValue.trim()) return;
+    const updated = db.renameGalleryItem(modalImage.id, renameValue.trim(), user?.id);
+    if (!updated) return;
+    setImages(db.getGallery());
+    setModalImage(updated);
+    toast({ title: 'Nama diperbarui', description: 'Filename SEO telah diganti' });
+  };
+
+  const handleDragStart = (idx) => { dragIndex.current = idx; };
+  const handleDragEnter = (idx) => { dragOver.current = idx; };
+  const handleDragEnd = () => {
+    const from = dragIndex.current;
+    const to = dragOver.current;
+    dragIndex.current = null;
+    dragOver.current = null;
+    if (from === null || to === null || from === to) return;
+    const reordered = [...images];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
+    const normalized = db.reorderGallery(reordered, user?.id);
+    setImages(normalized);
+    toast({ title: 'Urutan disimpan', description: 'Urutan galeri diperbarui' });
+  };
+
+  const openModal = (img) => {
+    setModalImage(img);
+    setRenameValue(img.name || img.filename || '');
+  };
 
   if (!isSuperadmin) {
     return (
@@ -22,148 +124,13 @@ const GalleryManager = ({ user }) => {
     );
   }
 
-  // Load images from /public/uploads/gallery/
-  const loadGalleryImages = async () => {
-    try {
-      setLoading(true);
-      // Simulate loading gallery images
-      // In production, you'd fetch from API endpoint listing all gallery images
-      const response = await fetch('/uploads/gallery/').catch(() => null);
-      // For now, we'll show uploaded images from localStorage or API
-      const savedImages = JSON.parse(localStorage.getItem('gallery_uploads') || '[]');
-      setImages(savedImages);
-    } catch (err) {
-      console.warn('Failed to load gallery:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadGalleryImages();
-  }, []);
-
-  const handleFileSelect = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    setUploading(true);
-    const uploadedFiles = [];
-
-    for (const file of files) {
-      try {
-        // Try to upload to API first (with timeout)
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('adminToken', 'SuperAdmin@2025');
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-        let uploadedFile = null;
-        
-        try {
-          const response = await fetch('/api/upload/gallery', {
-            method: 'POST',
-            headers: { 'x-admin-token': 'SuperAdmin@2025' },
-            body: formData,
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
-          
-          if (response.ok) {
-            const { data } = await response.json();
-            uploadedFile = data;
-          }
-        } catch (apiErr) {
-          clearTimeout(timeoutId);
-          console.warn('[gallery] API upload failed, using static mode', apiErr);
-        }
-
-        // If API failed, save as base64 in localStorage
-        if (!uploadedFile) {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            uploadedFile = {
-              id: Date.now(),
-              filename: file.name,
-              name: file.name,
-              originalUrl: event.target.result,
-              dataUrl: event.target.result,
-              size: file.size,
-              uploadedAt: new Date().toISOString()
-            };
-            uploadedFiles.push(uploadedFile);
-            
-            // Save to localStorage
-            const newImages = [...images, uploadedFile];
-            setImages(newImages);
-            localStorage.setItem('gallery_uploads', JSON.stringify(newImages));
-            
-            toast({
-              title: 'Upload Successful',
-              description: `${file.name} saved to local storage (static mode)`
-            });
-          };
-          reader.readAsDataURL(file);
-          continue;
-        }
-
-        uploadedFiles.push(uploadedFile);
-
-        toast({
-          title: 'Upload Successful',
-          description: `${file.name} uploaded successfully`
-        });
-      } catch (err) {
-        toast({
-          title: 'Upload Failed',
-          description: err.message || 'Failed to upload file',
-          variant: 'destructive'
-        });
-      }
-    }
-
-    // Update images state with API-uploaded files
-    if (uploadedFiles.length > 0) {
-      const newImages = [...images, ...uploadedFiles];
-      setImages(newImages);
-      localStorage.setItem('gallery_uploads', JSON.stringify(newImages));
-    }
-
-    setUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleDeleteImage = (imageId) => {
-    const image = images.find(img => img.id === imageId);
-    if (!image) return;
-    
-    if (!window.confirm('Are you sure you want to delete this image?')) return;
-
-    // Remove from state
-    const updated = images.filter(img => img.id !== imageId);
-    setImages(updated);
-    localStorage.setItem('gallery_uploads', JSON.stringify(updated));
-
-    toast({
-      title: 'Deleted',
-      description: 'Image removed from gallery'
-    });
-
-    // In production, call DELETE /api/upload/gallery/:id
-  };
-
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h2 className="text-3xl font-bold text-gray-800 mb-2">Gallery Manager</h2>
-        <p className="text-gray-600">Upload and manage school gallery images. Only superadmin access.</p>
+        <p className="text-gray-600">Upload, rename, urutkan, dan kelola galeri foto sekolah.</p>
       </div>
 
-      {/* Upload Section */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -187,69 +154,87 @@ const GalleryManager = ({ user }) => {
           {uploading ? (
             <>
               <Loader size={40} className="text-[#5D9CEC] animate-spin" />
-              <p className="font-semibold text-gray-700">Uploading...</p>
+              <p className="font-semibold text-gray-700">Mengunggah...</p>
             </>
           ) : (
             <>
               <Upload size={40} className="text-[#5D9CEC]" />
               <div>
-                <p className="font-semibold text-gray-700">Click to upload or drag files</p>
-                <p className="text-sm text-gray-500">PNG, JPG, WebP up to 4MB</p>
+                <p className="font-semibold text-gray-700">Klik untuk upload atau tarik file</p>
+                <p className="text-sm text-gray-500">JPG, PNG, WebP • Maks 4MB</p>
               </div>
             </>
           )}
         </button>
       </motion.div>
 
-      {/* Image Grid */}
       <div className="bg-white rounded-xl p-6 border border-gray-200">
-        <h3 className="text-xl font-bold text-gray-800 mb-4">
-          {images.length === 0 ? 'No images yet' : `${images.length} images in gallery`}
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-800">
+            {images.length === 0 ? 'Belum ada gambar' : `${images.length} gambar dalam galeri`}
+          </h3>
+          <p className="text-xs text-gray-500">Tip: tarik kartu untuk mengubah urutan</p>
+        </div>
 
         {loading ? (
           <div className="text-center py-12 text-gray-500">
             <Loader size={32} className="mx-auto animate-spin mb-2" />
-            Loading gallery...
+            Memuat galeri...
           </div>
         ) : images.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <Image size={48} className="mx-auto mb-3 opacity-20" />
-            <p>No images uploaded yet. Upload some images to get started!</p>
+            <p>Belum ada gambar. Unggah untuk memulai.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {images.map((img) => (
+            {images.map((img, idx) => (
               <motion.div
-                key={img.filename}
-                initial={{ opacity: 0, scale: 0.9 }}
+                key={img.id}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="group relative bg-gray-100 rounded-lg overflow-hidden aspect-square"
+                className="group relative bg-gray-100 rounded-lg overflow-hidden aspect-square border border-gray-100"
+                draggable
+                onDragStart={() => handleDragStart(idx)}
+                onDragEnter={() => handleDragEnter(idx)}
+                onDragEnd={handleDragEnd}
               >
                 <img
                   src={img.dataUrl || img.originalUrl || img.url}
-                  alt={img.filename || img.name}
+                  alt={img.name || img.filename}
                   onError={(e) => {
-                    console.warn('[gallery] image failed to load:', img.filename);
                     e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23e5e7eb" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="16" fill="%239ca3af" text-anchor="middle" dominant-baseline="middle"%3EImage not found%3C/text%3E%3C/svg%3E';
                   }}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
 
-                {/* Delete Button */}
-                <button
-                  onClick={() => handleDeleteImage(img.id)}
-                  className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
-                >
-                  <div className="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors">
-                    <Trash2 size={20} />
-                  </div>
-                </button>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                {/* Info */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 group-hover:translate-y-0 translate-y-full transition-transform duration-300">
-                  <p className="text-white text-xs truncate">{img.filename || img.name}</p>
-                  <p className="text-gray-300 text-xs">{(img.size / 1024).toFixed(0)} KB</p>
+                <div className="absolute top-2 left-2 flex items-center gap-2 text-white text-xs">
+                  <GripVertical size={16} className="opacity-80" />
+                  <span>#{idx + 1}</span>
+                </div>
+
+                <div className="absolute bottom-0 left-0 right-0 p-2 text-white text-xs space-y-1">
+                  <p className="font-semibold truncate">{img.name || img.filename}</p>
+                  <p className="text-white/80 truncate">{img.filename}</p>
+                </div>
+
+                <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <button
+                    onClick={() => openModal(img)}
+                    className="bg-white text-gray-800 rounded-full p-2 hover:bg-blue-50 shadow"
+                    aria-label="Preview"
+                  >
+                    <Eye size={18} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteImage(img.id)}
+                    className="bg-red-600 text-white rounded-full p-2 hover:bg-red-700 shadow"
+                    aria-label="Delete"
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </div>
               </motion.div>
             ))}
@@ -257,17 +242,93 @@ const GalleryManager = ({ user }) => {
         )}
       </div>
 
-      {/* Info Section */}
       <div className="bg-blue-50 rounded-xl p-4 border border-blue-200 text-sm text-gray-700">
         <p className="font-semibold mb-2">📋 Upload Guidelines:</p>
         <ul className="space-y-1 text-xs">
-          <li>✓ Accepted formats: JPG, PNG, WebP</li>
-          <li>✓ Maximum file size: 4 MB per image</li>
-          <li>✓ Images are automatically optimized to WebP format</li>
-          <li>✓ Only Superadmin can upload and delete images</li>
-          <li>✓ Use high-quality images for best results</li>
+          <li>✓ Format: JPG, PNG, WebP</li>
+          <li>✓ Maksimal ukuran 4 MB per gambar</li>
+          <li>✓ Nama file akan diubah ke format SEO otomatis</li>
+          <li>✓ Hanya Superadmin yang dapat upload/rename/delete/reorder</li>
+          <li>✓ Tarik kartu untuk mengubah urutan tampilan</li>
         </ul>
       </div>
+
+      <AnimatePresence>
+        {modalImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4"
+            onClick={() => setModalImage(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative">
+                <img
+                  src={modalImage.dataUrl || modalImage.originalUrl || modalImage.url}
+                  alt={modalImage.name}
+                  className="w-full max-h-[55vh] object-contain bg-gray-50"
+                />
+                <button
+                  onClick={() => setModalImage(null)}
+                  className="absolute top-3 right-3 bg-black/60 text-white rounded-full p-2 hover:bg-black"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-gray-500">Filename</p>
+                    <p className="font-semibold text-gray-800 break-all">{modalImage.filename}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">Upload date</p>
+                    <p className="font-medium text-gray-800">{new Date(modalImage.uploadedAt || Date.now()).toLocaleString('id-ID')}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700">Rename for SEO</label>
+                  <div className="flex gap-3">
+                    <input
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      placeholder="Masukkan nama baru"
+                    />
+                    <button
+                      onClick={handleRename}
+                      className="px-4 py-2 bg-[#5D9CEC] text-white rounded-lg hover:bg-[#4A89DC] flex items-center gap-2"
+                    >
+                      <Pencil size={16} />
+                      Simpan
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500">Format otomatis: slugified-title-timestamp.webp</p>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <div className="text-sm text-gray-500">Hanya Superadmin yang dapat rename, delete, dan reorder.</div>
+                  <button
+                    onClick={() => handleDeleteImage(modalImage.id)}
+                    className="text-red-600 hover:text-red-700 font-semibold flex items-center gap-2"
+                  >
+                    <Trash2 size={16} /> Hapus Foto
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

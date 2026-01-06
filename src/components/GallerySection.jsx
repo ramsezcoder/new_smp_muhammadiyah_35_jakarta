@@ -1,18 +1,33 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ZoomIn, Image as ImageIcon } from 'lucide-react';
+import { db } from '@/lib/db';
 
 const GallerySection = () => {
   const [selectedImage, setSelectedImage] = useState(null);
+  const [galleryImages, setGalleryImages] = useState([]);
 
-  const galleryImages = [
-    { id: 1, caption: 'Kegiatan Pembelajaran', description: 'Suasana belajar yang kondusif di kelas', src: 'https://images.unsplash.com/photo-1509062522246-3755977927d7' },
-    { id: 2, caption: 'Laboratorium Komputer', description: 'Fasilitas komputer modern untuk siswa', src: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3' },
-    { id: 3, caption: 'Perpustakaan Sekolah', description: 'Koleksi buku lengkap untuk literasi', src: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570' },
-    { id: 4, caption: 'Kegiatan Tahfidz', description: 'Pembiasaan menghafal Al-Quran', src: 'https://images.unsplash.com/photo-1584286595398-a59f21d313f5' },
-    { id: 5, caption: 'Lapangan Olahraga', description: 'Area olahraga yang luas dan representatif', src: 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e' },
-    { id: 6, caption: 'Ekstrakurikuler', description: 'Pengembangan minat dan bakat siswa', src: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18' },
-  ];
+  useEffect(() => {
+    const stored = db.getGallery();
+    if (stored.length) {
+      setGalleryImages(stored.slice(0, 6).map((img, idx) => ({
+        id: img.id || idx,
+        caption: img.name || img.filename || 'Galeri Sekolah',
+        description: 'Dokumentasi kegiatan sekolah',
+        src: img.dataUrl || img.originalUrl || img.url,
+      })));
+      return;
+    }
+
+    setGalleryImages([
+      { id: 1, caption: 'Kegiatan Pembelajaran', description: 'Suasana belajar yang kondusif di kelas', src: 'https://images.unsplash.com/photo-1509062522246-3755977927d7' },
+      { id: 2, caption: 'Laboratorium Komputer', description: 'Fasilitas komputer modern untuk siswa', src: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3' },
+      { id: 3, caption: 'Perpustakaan Sekolah', description: 'Koleksi buku lengkap untuk literasi', src: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570' },
+      { id: 4, caption: 'Kegiatan Tahfidz', description: 'Pembiasaan menghafal Al-Quran', src: 'https://images.unsplash.com/photo-1584286595398-a59f21d313f5' },
+      { id: 5, caption: 'Lapangan Olahraga', description: 'Area olahraga yang luas dan representatif', src: 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e' },
+      { id: 6, caption: 'Ekstrakurikuler', description: 'Pengembangan minat dan bakat siswa', src: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18' },
+    ]);
+  }, []);
 
   return (
     <section id="gallery" className="py-12 md:py-24 bg-white">
