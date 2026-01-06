@@ -331,12 +331,34 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+const server = app.listen(PORT, () => {
+  console.log(`\n╔════════════════════════════════════════╗`);
+  console.log(`║  SMP Muhammadiyah 35 Jakarta - Backend  ║`);
+  console.log(`║  Server running on port ${PORT}            ║`);
+  console.log(`║  Environment: ${(process.env.NODE_ENV || 'development').padEnd(24)}║`);
+  console.log(`╚════════════════════════════════════════╝\n`);
+  
   if (!process.env.DB_URL) {
-    console.warn('[api] DB_URL not set; using file-based storage for news/pdf analytics');
+    console.warn('[INFO] Using file-based storage for news/pdf analytics');
   }
+  
+  console.log('Routes:');
+  console.log('  ✓ GET  /health');
+  console.log('  ✓ GET  /api/news/list');
+  console.log('  ✓ GET  /api/news/detail/:slug');
+  console.log('  ✓ GET  /api/pdf/views');
+  console.log('  ✓ POST /api/pdf/view/:id');
+  console.log('  ✓ POST /api/upload/gallery');
+  console.log('  ✓ *    (SPA fallback to index.html)\n');
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('\n[INFO] SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('[INFO] Server closed');
+    process.exit(0);
+  });
 });
 
 module.exports = app;
