@@ -102,7 +102,7 @@ const ArticleDetail = ({ articleId, slugParam, onBack }) => {
   const keywordSuggestions = Array.isArray(article?.seo?.keywordSuggestions) ? article.seo.keywordSuggestions : [];
 
   const seoKeywords = Array.from(new Set([
-    ...(article?.tags ? article.tags.split(',').map((t) => t.trim()) : []),
+    ...(article?.tags && typeof article.tags === 'string' ? article.tags.split(',').map((t) => t.trim()) : []),
     ...(Array.isArray(article?.hashtags) ? article.hashtags.map((h) => h.replace('#', '')) : []),
     ...keywordSuggestions,
     'SMP Muhammadiyah 35 Jakarta',
@@ -303,15 +303,17 @@ const ArticleDetail = ({ articleId, slugParam, onBack }) => {
         />
 
         {/* Tags */}
-        <div className="mt-12 pt-8 border-t border-gray-100">
-          <div className="flex flex-wrap gap-2">
-            {article.tags?.split(',').map((tag, i) => (
-              <span key={i} className="px-3 py-1 bg-gray-50 text-gray-600 rounded-lg text-sm hover:bg-[#E8F4F8] hover:text-[#5D9CEC] cursor-pointer transition-colors">
-                #{tag.trim()}
-              </span>
-            ))}
+        {article.tags && typeof article.tags === 'string' && (
+          <div className="mt-12 pt-8 border-t border-gray-100">
+            <div className="flex flex-wrap gap-2">
+              {article.tags.split(',').map((tag, i) => (
+                <span key={i} className="px-3 py-1 bg-gray-50 text-gray-600 rounded-lg text-sm hover:bg-[#E8F4F8] hover:text-[#5D9CEC] cursor-pointer transition-colors">
+                  #{tag.trim()}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
           {/* Hashtags */}
           {article.hashtags && article.hashtags.length > 0 && (

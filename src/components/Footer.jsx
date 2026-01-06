@@ -16,9 +16,11 @@ const Footer = () => {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-3 mb-4 md:mb-6">
-              <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-[#5D9CEC] font-bold text-sm md:text-base">
-                M35
-              </div>
+              <img 
+                src="/LOGO_BARU_SMP.png" 
+                alt="Logo SMP Muhammadiyah 35 Jakarta"
+                className="h-11 w-auto"
+              />
               <div className="font-poppins font-bold text-lg md:text-xl text-gray-800">SMP Muhammadiyah 35</div>
             </div>
             <p className="text-xs md:text-sm leading-relaxed text-gray-600 mb-4 md:mb-6">

@@ -60,7 +60,7 @@ const NewsSection = () => {
 
         {/* Desktop Grid / Mobile Carousel */}
         <div className="flex overflow-x-auto gap-4 pb-6 -mx-4 px-4 md:grid md:grid-cols-2 md:gap-8 md:pb-0 md:mx-0 md:px-0 snap-x snap-mandatory scrollbar-hide">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="popLayout">
             {articles.length > 0 ? articles.map((article) => (
               <motion.div
                 key={article.id}

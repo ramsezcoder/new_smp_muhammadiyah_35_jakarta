@@ -11,16 +11,36 @@ const HeroSection = ({ onRegisterClick }) => {
   };
 
   return (
-    <section id="hero" className="relative min-h-[70vh] md:min-h-[90vh] flex items-center justify-center overflow-hidden pt-16 md:pt-20">
-      {/* Background with overlay */}
-      <div className="absolute inset-0 z-0">
-        <img 
-          className="w-full h-full object-cover scale-105" 
-          alt="Suasana lingkungan kampus SMP Muhammadiyah 35 Jakarta - Islamic & Global School" 
-          loading="eager"
-          src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1" 
+    <section 
+      id="hero" 
+      className="relative min-h-[75vh] md:min-h-[85vh] flex items-center justify-center overflow-hidden pt-16 md:pt-20 bg-cover bg-center bg-no-repeat"
+      style={{
+        backgroundImage: 'linear-gradient(to bottom, rgba(93,156,236,0.65), rgba(74,137,220,0.85), rgba(232,244,248,0.95)), url(/MG_6069.webp)',
+        backgroundAttachment: 'scroll'
+      }}
+    >
+      {/* Animated Parallax Clouds */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <motion.div
+          animate={{ x: ['-100%', '100%'] }}
+          transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
+          className="absolute top-10 left-0 w-64 h-32 bg-white/10 rounded-full blur-3xl"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#E8F4F8]/90 via-[#D4E8F0]/85 to-white/95"></div>
+        <motion.div
+          animate={{ x: ['100%', '-100%'] }}
+          transition={{ duration: 50, repeat: Infinity, ease: 'linear' }}
+          className="absolute top-32 right-0 w-80 h-40 bg-white/8 rounded-full blur-3xl"
+        />
+        <motion.div
+          animate={{ x: ['-50%', '150%'] }}
+          transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
+          className="absolute top-1/2 left-0 w-96 h-48 bg-blue-100/10 rounded-full blur-3xl"
+        />
+        <motion.div
+          animate={{ x: ['150%', '-50%'] }}
+          transition={{ duration: 55, repeat: Infinity, ease: 'linear' }}
+          className="absolute bottom-20 right-0 w-72 h-36 bg-white/7 rounded-full blur-3xl"
+        />
       </div>
 
       <div className="container mx-auto px-4 relative z-10 text-center">
@@ -36,16 +56,19 @@ const HeroSection = ({ onRegisterClick }) => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mb-4 md:mb-6"
           >
-            <span className="bg-white/50 backdrop-blur-sm border border-blue-100 text-[#4A89DC] px-3 py-1 md:px-4 md:py-1.5 rounded-full text-xs md:text-sm font-semibold tracking-wide shadow-sm">
-              SMP_Muhammadiyah_35_Jakarta
-            </span>
+            <img 
+              src="/LOGO_SMP_UPSCALE.webp" 
+              alt="Logo SMP Muhammadiyah 35 Jakarta" 
+              className="h-20 md:h-24 w-auto drop-shadow-2xl"
+            />
           </motion.div>
 
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="font-poppins text-3xl md:text-6xl lg:text-7xl font-bold text-gray-800 mb-2 leading-tight tracking-tight"
+            className="font-poppins text-3xl md:text-6xl lg:text-7xl font-bold text-white mb-2 leading-tight tracking-tight drop-shadow-lg"
+            style={{ textShadow: '0 2px 10px rgba(0,0,0,0.2)' }}
           >
             Islamic & Global School
           </motion.h1>
@@ -54,7 +77,7 @@ const HeroSection = ({ onRegisterClick }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
-            className="font-poppins text-xl md:text-3xl font-light text-[#5D9CEC] mb-8 md:mb-10"
+            className="font-poppins text-xl md:text-3xl font-bold text-white mb-8 md:mb-10"
           >
             SPMB TA 2026/2027
           </motion.h2>

@@ -13,9 +13,9 @@ import NewsManager from '@/components/admin/NewsManager';
 import DashboardHome from '@/components/admin/DashboardHome';
 import SettingsManager from '@/components/admin/SettingsManager';
 import RegistrantManager from '@/components/admin/RegistrantManager';
+import GalleryManager from '@/components/admin/GalleryManager';
 
 // Temporary placeholders for incomplete components
-const MediaLibrary = () => <div className="p-8 text-center text-gray-500">Media Library Module (Coming Soon)</div>;
 const PagesManager = () => <div className="p-8 text-center text-gray-500">Pages Management Module (Coming Soon)</div>;
 const UserManager = () => <div className="p-8 text-center text-gray-500">User Management Module (Coming Soon)</div>;
 
@@ -172,7 +172,7 @@ const AdminDashboard = ({ onLogout }) => {
           {activeTab === 'news_student' && <NewsManager user={user} channel="student" />}
           {activeTab === 'registrants' && <RegistrantManager user={user} />}
           {activeTab === 'settings' && <SettingsManager user={user} />}
-          {activeTab === 'media' && <MediaLibrary user={user} />}
+          {activeTab === 'media' && <GalleryManager user={user} />}
           {activeTab === 'pages' && <PagesManager user={user} />}
           {activeTab === 'users' && <UserManager user={user} />}
         </main>

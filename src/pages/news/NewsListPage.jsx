@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Clock, User, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { db } from '@/lib/db';
@@ -21,12 +21,13 @@ const SkeletonCard = () => (
   </div>
 );
 
-const NewsCard = ({ article, onReadMore }) => {
+const NewsCard = React.forwardRef(({ article, onReadMore }, ref) => {
   const image = article.featuredImage || FALLBACK_IMAGE;
   const slug = article.seo?.slug || article.slug || `article-${article.id}`;
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
@@ -68,7 +69,7 @@ const NewsCard = ({ article, onReadMore }) => {
       </div>
     </motion.div>
   );
-};
+});
 
 const NewsListPage = () => {
   const navigate = useNavigate();
@@ -223,11 +224,9 @@ const NewsListPage = () => {
           {loading ? (
             Array.from({ length: 9 }).map((_, idx) => <SkeletonCard key={idx} />)
           ) : items.length > 0 ? (
-            <AnimatePresence>
-              {items.map((article) => (
-                <NewsCard key={article.id} article={article} onReadMore={handleReadMore} />
-              ))}
-            </AnimatePresence>
+            items.map((article) => (
+              <NewsCard key={article.id} article={article} onReadMore={handleReadMore} />
+            ))
           ) : (
             <div className="col-span-3 text-center py-12 text-gray-400">Tidak ada berita untuk kategori ini.</div>
           )}

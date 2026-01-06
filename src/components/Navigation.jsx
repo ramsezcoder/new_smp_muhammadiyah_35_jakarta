@@ -122,9 +122,11 @@ const Navigation = ({ onRegisterClick }) => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3 cursor-pointer" onClick={() => scrollToSection('hero')}>
-            <div className="w-8 h-8 md:w-12 md:h-12 bg-gradient-to-br from-[#D4E8F0] to-[#E8F4F8] rounded-full flex items-center justify-center text-[#2c3e50] font-bold text-sm md:text-lg border border-blue-100 shadow-sm">
-              M35
-            </div>
+            <img 
+              src="/LOGO_BARU_SMP.png" 
+              alt="Logo SMP Muhammadiyah 35 Jakarta"
+              className="h-11 w-auto"
+            />
             <div className="hidden md:block">
               <div className="font-poppins font-bold text-gray-800 text-lg leading-tight">SMP Muhammadiyah 35</div>
               <div className="text-xs text-gray-500 font-medium">Jakarta</div>

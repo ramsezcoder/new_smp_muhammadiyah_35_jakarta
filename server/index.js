@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const multer = require('multer');
+const sharp = require('sharp');
 require('dotenv').config();
 
 const app = express();
@@ -46,13 +48,14 @@ const normalizeNews = (items = []) => {
         id: n.id || slug,
         title: n.title,
         slug,
+        content: n.content || '',
         excerpt: n.excerpt || stripHtml(n.content || '').slice(0, 180),
-        image,
+        featuredImage: image,
         category: n.category || 'Berita',
         channel,
         createdAt,
         readTime: n.readTime || computeReadTime(n.content || ''),
-        author: n.authorName || 'Redaksi'
+        author: n.authorName || n.author || 'Redaksi'
       };
     });
 };
@@ -92,6 +95,18 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Serve built frontend in production
+const distPath = path.resolve(__dirname, '..', 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+}
+
+// Serve public uploads
+const publicPath = path.resolve(__dirname, '..', 'public');
+if (fs.existsSync(publicPath)) {
+  app.use(express.static(publicPath));
+}
+
 // Disable caching for API routes
 app.use('/api/*', (req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -118,48 +133,190 @@ const verifyRecaptchaRouter = require('./api/verify-recaptcha');
 app.use('/api', verifyRecaptchaRouter);
 
 app.get('/api/news/list', (req, res) => {
-  const category = req.query.category === 'student' ? 'student' : 'school';
-  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-  const limit = Math.max(1, parseInt(req.query.limit, 10) || 9);
+  try {
+    const category = req.query.category === 'student' ? 'student' : 'school';
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 9);
 
-  const newsItems = normalizeNews(loadImportedNews()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  const filtered = newsItems.filter(n => category ? n.channel === category : true);
-  const total = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const start = (page - 1) * limit;
-  const paged = filtered.slice(start, start + limit);
+    const newsItems = normalizeNews(loadImportedNews()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const filtered = newsItems.filter(n => (category ? n.channel === category : true));
+    const totalRecords = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalRecords / limit));
+    const start = (page - 1) * limit;
+    const paged = filtered.slice(start, start + limit);
 
-  res.json({
-    total,
-    page,
-    pageSize: limit,
-    totalPages,
-    items: paged
-  });
+    res.json({
+      success: true,
+      data: paged,
+      items: paged,
+      totalPages,
+      totalRecords,
+      page,
+      pageSize: limit
+    });
+  } catch (err) {
+    console.warn('[api] news list failed', err.message);
+    res.status(500).json({ success: false, message: 'Failed to load news', error: err.message });
+  }
+});
+
+app.get('/api/news/detail/:slug', (req, res) => {
+  try {
+    const { slug } = req.params;
+    if (!slug) return res.status(400).json({ success: false, error: 'Missing slug' });
+
+    const newsItems = loadImportedNews();
+    let found = newsItems.find(n => (n.seo?.slug || n.slug) === slug);
+    
+    if (!found) {
+      found = newsItems.find(n => String(n.id) === slug);
+    }
+
+    if (!found) {
+      return res.status(404).json({ success: false, message: 'Article not found' });
+    }
+
+    const normalized = normalizeNews([found])[0];
+    const fullArticle = {
+      ...normalized,
+      content: found.content || '',
+      tags: found.tags || '',
+      hashtags: found.hashtags || [],
+      seo: found.seo || {},
+      authorName: found.authorName || found.author || 'Redaksi',
+      authorRole: found.authorRole || 'Staff',
+      publishedAt: found.publishedAt || found.createdAt || new Date().toISOString(),
+      updatedAt: found.updatedAt || found.publishedAt || found.createdAt || new Date().toISOString()
+    };
+
+    res.json({
+      success: true,
+      record: fullArticle,
+      data: fullArticle,
+      article: fullArticle
+    });
+  } catch (err) {
+    console.warn('[api] news detail failed', err.message);
+    res.status(500).json({ success: false, message: 'Failed to load article', error: err.message });
+  }
 });
 
 app.get('/api/pdf/views', (req, res) => {
-  const views = loadPdfViews();
-  res.json({ views });
+  try {
+    const views = loadPdfViews();
+    res.json({ success: true, views });
+  } catch (err) {
+    console.warn('[api] pdf views read failed', err.message);
+    res.status(500).json({ success: false, message: 'Failed to load views' });
+  }
 });
 
-app.patch('/api/pdf/view/:id', (req, res) => {
-  const { id } = req.params;
-  if (!id) return res.status(400).json({ error: 'Missing pdf id' });
+const incrementPdfView = (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ success: false, error: 'Missing pdf id' });
 
-  const views = loadPdfViews();
-  const current = views[id] || { pdfId: id, fileName: req.body?.fileName || '', viewCount: 0, lastOpened: null };
-  const updated = {
-    ...current,
-    pdfId: id,
-    fileName: req.body?.fileName || current.fileName,
-    viewCount: (current.viewCount || 0) + 1,
-    lastOpened: new Date().toISOString()
-  };
+    const views = loadPdfViews();
+    const current = views[id] || { pdfId: id, fileName: req.body?.fileName || '', viewCount: 0, lastOpened: null };
+    const updated = {
+      ...current,
+      pdfId: id,
+      fileName: req.body?.fileName || current.fileName,
+      viewCount: (current.viewCount || 0) + 1,
+      lastOpened: new Date().toISOString()
+    };
 
-  views[id] = updated;
-  savePdfViews(views);
-  res.json(updated);
+    views[id] = updated;
+    savePdfViews(views);
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    console.warn('[api] pdf view increment failed', err.message);
+    res.status(500).json({ success: false, message: 'Failed to increment view' });
+  }
+};
+
+app.post('/api/pdf/view/:id', incrementPdfView);
+app.patch('/api/pdf/view/:id', incrementPdfView);
+
+// Gallery upload endpoint
+const UPLOAD_DIR = path.resolve(__dirname, '..', 'public', 'uploads', 'gallery');
+const TEMP_DIR = path.resolve(__dirname, 'temp');
+
+// Ensure directories exist
+[UPLOAD_DIR, TEMP_DIR].forEach(dir => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+});
+
+const upload = multer({
+  dest: TEMP_DIR,
+  limits: { fileSize: 4 * 1024 * 1024 }, // 4MB max
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+    const allowedExts = ['.jpg', '.jpeg', '.png', '.webp'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedMimes.includes(file.mimetype) && allowedExts.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPG, PNG, and WebP are allowed.'));
+    }
+  }
+});
+
+app.post('/api/upload/gallery', upload.single('file'), async (req, res) => {
+  try {
+    // Check if user is superadmin
+    const superadminToken = req.headers['x-admin-token'] || req.body.adminToken;
+    if (superadminToken !== 'SuperAdmin@2025') {
+      if (req.file) fs.unlinkSync(req.file.path);
+      return res.status(403).json({ success: false, error: 'Unauthorized. Only superadmin can upload.' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+
+    // Generate unique filename with timestamp
+    const timestamp = Date.now();
+    const filename = `gallery-${timestamp}-${Math.random().toString(36).substr(2, 9)}.webp`;
+    const outputPath = path.join(UPLOAD_DIR, filename);
+
+    // Convert and compress image to WebP
+    await sharp(req.file.path)
+      .resize(1200, 900, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .webp({ quality: 80 })
+      .toFile(outputPath);
+
+    // Clean up temp file
+    fs.unlinkSync(req.file.path);
+
+    res.json({
+      success: true,
+      data: {
+        url: `/uploads/gallery/${filename}`,
+        filename,
+        size: (await fs.promises.stat(outputPath)).size,
+        uploadedAt: new Date().toISOString()
+      }
+    });
+  } catch (err) {
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    console.error('[api] upload failed', err.message);
+    res.status(500).json({ success: false, error: err.message || 'Upload failed' });
+  }
+});
+
+// SPA fallback for non-API routes
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  if (fs.existsSync(distPath)) {
+    return res.sendFile(path.join(distPath, 'index.html'));
+  }
+  return next();
 });
 
 // 404 handler
@@ -177,6 +334,9 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  if (!process.env.DB_URL) {
+    console.warn('[api] DB_URL not set; using file-based storage for news/pdf analytics');
+  }
 });
 
 module.exports = app;

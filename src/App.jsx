@@ -23,6 +23,7 @@ import ArticleDetail from '@/components/ArticleDetail';
 import StaffPage from '@/components/pages/StaffPage';
 import VisionMissionPage from '@/components/pages/VisionMissionPage';
 import HistoryPage from '@/components/pages/HistoryPage';
+import GalleryIndexPage from '@/components/pages/GalleryIndexPage';
 import PhotoGallery from '@/components/pages/PhotoGallery';
 import VideoGallery from '@/components/pages/VideoGallery';
 import InfographicGallery from '@/components/pages/InfographicGallery';
@@ -178,6 +179,7 @@ function App() {
         <Route path="profile/staff" element={<StaffPage />} />
         <Route path="profile/vision-mission" element={<VisionMissionPage />} />
         <Route path="profile/history" element={<HistoryPage />} />
+        <Route path="gallery" element={<GalleryIndexPage />} />
         <Route path="gallery/photos" element={<PhotoGallery />} />
         <Route path="gallery/videos" element={<VideoGallery />} />
         <Route path="gallery/infographics" element={<InfographicGallery />} />
