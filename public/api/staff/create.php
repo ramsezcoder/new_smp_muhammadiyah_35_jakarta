@@ -2,6 +2,9 @@
 declare(strict_types=1);
 require __DIR__ . '/../_bootstrap.php';
 
+// Auth: only Admin/Superadmin can create
+require_auth($config, ['Admin','Superadmin']);
+
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
   respond(false, 'Method not allowed', [], 405);
 }

@@ -1,25 +1,32 @@
 import React, { useState } from 'react';
-import { db } from '@/lib/db';
+import { getSettings, updateSettings } from '@/lib/settingsApi';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 
 const SettingsManager = ({ user }) => {
   const { toast } = useToast();
-  const [settings, setSettings] = useState(db.getSettings());
+  const [settings, setSettings] = useState({});
+
+  React.useEffect(() => {
+    getSettings().then(setSettings).catch(() => setSettings({}));
+  }, []);
 
   const handleSave = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const newSettings = {
-      ...settings,
-      siteName: formData.get('siteName'),
-      whatsappNumber: formData.get('whatsappNumber'),
-      email: formData.get('email'),
+      site_name: formData.get('siteName'),
+      contact_phone: formData.get('whatsappNumber'),
+      contact_email: formData.get('email'),
       address: formData.get('address'),
-      instagramUrl: formData.get('instagramUrl'),
-      youtubeUrl: formData.get('youtubeUrl'),
+      social_links: {
+        instagram: formData.get('instagramUrl'),
+        youtube: formData.get('youtubeUrl')
+      }
     };
-    db.saveSettings(newSettings, user.id);
+    await updateSettings(newSettings);
+    const refreshed = await getSettings();
+    setSettings(refreshed);
     toast({ title: "Updated", description: "System settings updated successfully" });
   };
 

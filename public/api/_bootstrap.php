@@ -105,3 +105,38 @@ ensure_dirs([$config['uploads']['base'], $config['uploads']['articles'], $config
 function uploads_url_path(string $subdir): string {
   return '/uploads/' . trim($subdir, '/');
 }
+
+// --- Auth helpers ---
+function get_auth_user(array $config) {
+  $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+  if (!preg_match('/Bearer\s+(.*)$/i', $auth, $m)) {
+    respond(false, 'Missing token', [], 401);
+  }
+  $token = $m[1];
+  try {
+    [$headerB64, $payloadB64, $sigB64] = explode('.', $token);
+    $expected = rtrim(strtr(base64_encode(hash_hmac('sha256', $headerB64 . '.' . $payloadB64, $config['jwt_secret'], true)), '+/', '-_'), '=');
+    if (!hash_equals($expected, $sigB64)) {
+      respond(false, 'Invalid signature', [], 401);
+    }
+    $payloadJson = base64_decode(strtr($payloadB64, '-_', '+/'));
+    $payload = json_decode($payloadJson, true);
+    if (!$payload || ($payload['exp'] ?? 0) < time()) {
+      respond(false, 'Token expired', [], 401);
+    }
+    return $payload;
+  } catch (Throwable $e) {
+    respond(false, 'Invalid token', ['error' => $e->getMessage()], 401);
+  }
+}
+
+function require_auth(array $config, array $roles = []) {
+  $user = get_auth_user($config);
+  if (!empty($roles)) {
+    $role = $user['role'] ?? '';
+    if (!in_array($role, $roles, true)) {
+      respond(false, 'Forbidden', [], 403);
+    }
+  }
+  return $user;
+}

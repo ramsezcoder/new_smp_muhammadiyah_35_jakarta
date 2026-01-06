@@ -2,12 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, Trash2, Pencil, GripVertical, CheckCircle2, XCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { db } from '@/lib/db';
 import { validateImageFile } from '@/lib/api-utils';
-import { staffStorage } from '@/lib/staticStorage';
-import { getBlobUrl } from '@/lib/blobStore';
-import { exportJson } from '@/lib/safeStorage';
-import { STATIC_MODE, MESSAGES, STORAGE_KEYS } from '@/config/staticMode';
+import { listStaff, createStaff, updateStaff, deleteStaff, reorderStaff } from '@/lib/staffApi';
+import { MESSAGES } from '@/config/staticMode';
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 4 * 1024 * 1024;
@@ -28,13 +25,18 @@ const StaffManager = ({ user }) => {
   useEffect(() => {
     const load = async () => {
       try {
-        const staffList = staffStorage.getAll();
-        // Resolve preview URLs from IDB
-        const withPreview = await Promise.all(staffList.map(async (s) => ({
-          ...s,
-          photoPreview: s.fileKey ? (await getBlobUrl('staff', s.fileKey)) : (s.photo || s.image || '')
-        })));
-        setStaff(withPreview || []);
+        const data = await listStaff({ includeUnpublished: true });
+        const items = (data.items || []).map(s => ({
+          id: s.id,
+          name: s.name,
+          position: s.role,
+          role: s.role,
+          photo: s.photo_url,
+          photoPreview: s.photo_url,
+          active: !!s.is_published,
+          bio: s.bio || ''
+        }));
+        setStaff(items);
       } catch (e) {
         console.error('[StaffManager] Load failed:', e);
         toast({ variant: 'destructive', title: 'Gagal memuat staff', description: e.message });
@@ -133,17 +135,10 @@ const StaffManager = ({ user }) => {
     }
     
     try {
-      const staffData = {
-        name: form.name.trim(),
-        position: form.position.trim(),
-        role: form.position.trim(),
-        photoFile: photoFile || null,
-        active: form.active !== false
-      };
-      const created = await staffStorage.add(staffData);
-      const previewUrl = created.fileKey ? await getBlobUrl('staff', created.fileKey) : '';
-      const updatedStaff = staffStorage.getAll().map(s => s.id === created.id ? { ...created, photoPreview: previewUrl } : s);
-      setStaff(updatedStaff);
+      const created = await createStaff({ name: form.name.trim(), role: form.position.trim(), bio: '', photo: photoFile });
+      const updated = await listStaff({ includeUnpublished: true });
+      const items = (updated.items || []).map(s => ({ id: s.id, name: s.name, position: s.role, role: s.role, photo: s.photo_url, photoPreview: s.photo_url, active: !!s.is_published, bio: s.bio || '' }));
+      setStaff(items);
       toast({ title: 'Profil ditambahkan', description: MESSAGES.OPERATION_SUCCESS });
       resetForm();
     } catch (err) {
@@ -172,9 +167,10 @@ const StaffManager = ({ user }) => {
     const confirmed = window.confirm('Apakah Anda yakin ingin menghapus data staff ini?');
     if (!confirmed) return;
     
-    staffStorage.delete(id);
-    const updatedStaff = staffStorage.getAll();
-    setStaff(updatedStaff);
+    await deleteStaff(id);
+    const updated = await listStaff({ includeUnpublished: true });
+    const items = (updated.items || []).map(s => ({ id: s.id, name: s.name, position: s.role, role: s.role, photo: s.photo_url, photoPreview: s.photo_url, active: !!s.is_published, bio: s.bio || '' }));
+    setStaff(items);
     
     toast({ title: 'Staff dihapus', description: 'Data sudah dihapus' });
     if (form.id === id) resetForm();
@@ -183,10 +179,10 @@ const StaffManager = ({ user }) => {
   const handleToggleActive = async (id) => {
     const current = staff.find((s) => s.id === id);
     if (!current) return;
-    const updated = await staffStorage.update(id, { active: !current.active });
-    const previewUrl = updated.fileKey ? await getBlobUrl('staff', updated.fileKey) : (updated.photo || updated.image || '');
-    const nextList = staffStorage.getAll().map(s => s.id === id ? { ...updated, photoPreview: previewUrl } : s);
-    setStaff(nextList);
+    await updateStaff({ id, name: current.name, role: current.position || current.role, bio: current.bio || '', keepPhoto: true });
+    const refreshed = await listStaff({ includeUnpublished: true });
+    const items = (refreshed.items || []).map(s => ({ id: s.id, name: s.name, position: s.role, role: s.role, photo: s.photo_url, photoPreview: s.photo_url, active: !!s.is_published, bio: s.bio || '' }));
+    setStaff(items);
   };
 
   const handleDragStart = (idx) => { dragIndex.current = idx; };
@@ -204,20 +200,13 @@ const StaffManager = ({ user }) => {
     setStaff(reordered);
     
     const order = reordered.map(s => s.id);
-    staffStorage.reorder(order);
+    await reorderStaff(order);
     
     toast({ title: 'Urutan disimpan', description: 'Urutan staff diperbarui' });
   };
 
   const handlePublish = async () => {
-    try {
-      const published = await staffStorage.publish();
-      toast({ title: 'Publish Staff', description: MESSAGES.PUBLISH_SUCCESS });
-      // Offer JSON export for static hosting
-      exportJson('published_staff.json', published);
-    } catch (e) {
-      toast({ variant: 'destructive', title: 'Publish gagal', description: MESSAGES.OPERATION_FAILED });
-    }
+    toast({ title: 'Publish Staff', description: 'Publish is handled by visibility toggles in MySQL.' });
   };
 
   if (!isSuperadmin) {

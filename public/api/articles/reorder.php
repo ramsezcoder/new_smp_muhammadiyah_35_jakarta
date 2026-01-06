@@ -2,12 +2,12 @@
 declare(strict_types=1);
 require __DIR__ . '/../_bootstrap.php';
 
-// Auth: only Admin/Superadmin can reorder
-require_auth($config, ['Admin','Superadmin']);
-
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
   respond(false, 'Method not allowed', [], 405);
 }
+
+// Auth: only Admin/Author/Superadmin can reorder
+require_auth($config, ['Admin','Author','Superadmin']);
 
 $input = json_decode(file_get_contents('php://input') ?: 'null', true) ?: [];
 $ids = $input['ids'] ?? null;
@@ -18,7 +18,7 @@ if (!is_array($ids) || empty($ids)) {
 try {
   $pdo->beginTransaction();
   $order = 1;
-  $stmt = $pdo->prepare('UPDATE videos SET sort_order = ? WHERE id = ?');
+  $stmt = $pdo->prepare('UPDATE articles SET sort_order = ? WHERE id = ?');
   foreach ($ids as $id) {
     $stmt->execute([$order++, (int)$id]);
   }

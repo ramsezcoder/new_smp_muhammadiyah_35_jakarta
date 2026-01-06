@@ -130,11 +130,8 @@ const IMPORTED_NEWS = (Array.isArray(importedPosts) ? importedPosts : [])
   .map(normalizeImportedPost)
   .filter(Boolean);
 
-const DEFAULT_USERS = [
-  { id: 1, email: 'superadmin@smpmuh35.id', password: 'SuperAdmin@2025', name: 'Super Admin', role: 'Superadmin', status: 'active', lastLogin: null },
-  { id: 2, email: 'admin@smpmuh35.id', password: 'Admin@2025', name: 'Admin Staff', role: 'Admin', status: 'active', lastLogin: null },
-  { id: 3, email: 'postmaker@smpmuh35.id', password: 'PostMaker@2025', name: 'Content Creator', role: 'Post Maker', status: 'active', lastLogin: null },
-];
+// NOTE: Legacy default users removed to prevent plaintext credential leakage.
+// Authentication is handled via PHP API in src/lib/authApi.js.
 
 const DEFAULT_SETTINGS = {
   siteName: 'SMP Muhammadiyah 35 Jakarta',
@@ -255,28 +252,8 @@ export const db = {
   _saveData: (key, data) => localStorage.setItem(key, JSON.stringify(data)),
 
   // --- AUTHENTICATION ---
-  login: (email, password) => {
-    const users = db._getData('app_users', DEFAULT_USERS);
-    const user = users.find(u => u.email === email && u.password === password);
-    
-    if (user) {
-      if (user.status !== 'active') throw new Error('Account is disabled');
-      
-      const session = {
-        user: { id: user.id, name: user.name, email: user.email, role: user.role },
-        token: 'jwt-' + Date.now(),
-        expiresAt: Date.now() + (30 * 60 * 1000)
-      };
-      localStorage.setItem('app_session', JSON.stringify(session));
-      
-      // Update last login
-      user.lastLogin = new Date().toISOString();
-      db.saveUser(user);
-      db.logActivity(user.id, 'LOGIN', `User ${user.email} logged in`);
-      
-      return session;
-    }
-    throw new Error('Invalid credentials');
+  login: () => {
+    throw new Error('Deprecated: Use PHP API login (see src/lib/authApi.js)');
   },
 
   logout: () => {
@@ -296,27 +273,10 @@ export const db = {
     return session;
   },
 
-  // --- USERS ---
-  getUsers: () => db._getData('app_users', DEFAULT_USERS),
-  
-  saveUser: (userData) => {
-    const users = db.getUsers();
-    if (userData.id) {
-      const index = users.findIndex(u => u.id === userData.id);
-      users[index] = { ...users[index], ...userData, updatedAt: new Date().toISOString() };
-    } else {
-      userData.id = Date.now();
-      userData.status = userData.status || 'active';
-      userData.createdAt = new Date().toISOString();
-      users.push(userData);
-    }
-    db._saveData('app_users', users);
-  },
-
-  deleteUser: (id) => {
-    const users = db.getUsers().filter(u => u.id !== id);
-    db._saveData('app_users', users);
-  },
+  // --- USERS (legacy local-only; not used) ---
+  getUsers: () => db._getData('app_users', []),
+  saveUser: () => { throw new Error('Deprecated: manage users via backend'); },
+  deleteUser: () => { throw new Error('Deprecated: manage users via backend'); },
 
   // --- NEWS ---
   getNews: () => {

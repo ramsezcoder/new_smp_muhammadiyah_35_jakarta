@@ -3,15 +3,14 @@ import {
   Plus, Search, Edit, Trash2, Eye, Save, Upload, Check, X,
   FileText, Calendar, User, Tag, Image as ImageIcon
 } from 'lucide-react';
-import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import RichTextEditor from './RichTextEditor';
 import { SITE_INFO } from '@/lib/seo-utils';
 import { generateArticleSEO, generateSlug, calculateCTRScore } from '@/lib/seo-engine';
 import { validateImageFile } from '@/lib/api-utils';
-import { simulateUpload } from '@/lib/staticStorage';
-import { STATIC_MODE, MESSAGES } from '@/config/staticMode';
+import { listArticles, createArticle, updateArticle, deleteArticle, reorderArticles } from '@/lib/articlesApi';
+import { MESSAGES } from '@/config/staticMode';
 
 const NewsManager = ({ user, channel }) => {
   const { toast } = useToast();
@@ -20,7 +19,9 @@ const NewsManager = ({ user, channel }) => {
   const [currentArticle, setCurrentArticle] = useState(null);
   const [filter, setFilter] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [loading, setLoading] = useState(false);
   const featuredImageInputRef = React.useRef(null);
+  const featuredImageFileRef = React.useRef(null);
 
   const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
   const MAX_IMAGE_SIZE = 4 * 1024 * 1024; // 4MB
@@ -31,12 +32,10 @@ const NewsManager = ({ user, channel }) => {
     content: '',
     excerpt: '',
     category: '',
-    tags: '',
-      hashtags: '',
-      status: 'draft',
+    tags: [],
+    status: 'draft',
     featuredImage: '',
     featuredImageAlt: '',
-    featuredImageTitle: '',
     featuredImageName: ''
   });
 
@@ -53,25 +52,9 @@ const NewsManager = ({ user, channel }) => {
     ctrScore: 0
   });
 
-  const defaultSeo = {
-    focusKeyphrase: '',
-    seoTitle: '',
-    slug: '',
-    metaDescription: '',
-    seoScore: 0,
-    readabilityScore: 0,
-    keywordSuggestions: [],
-    aiNotes: [],
-    lsiKeywords: [],
-    ctrScore: 0
-  };
-
-  const [seoEdited, setSeoEdited] = useState({
-    focusKeyphrase: false,
-    seoTitle: false,
-    slug: false,
-    metaDescription: false
-  });
+  useEffect(() => {
+    loadArticles();
+  }, []);
 
   const STOP_WORDS = ['the','a','an','of','for','and','or','but','with','yang','dan','di','ke','dari','para','akan','untuk','pada','dalam','ada','itu','ini','atau','sebagai','dengan','serta','karena'];
 
@@ -299,55 +282,50 @@ const NewsManager = ({ user, channel }) => {
     reader.readAsDataURL(file);
   });
 
+  const loadArticles = async () => {
+    setLoading(true);
+    try {
+      const data = await listArticles({ status: 'all', limit: 100 });
+      setArticles(data.items || []);
+    } catch (e) {
+      console.error('[NewsManager] Load failed:', e);
+      toast({ variant: 'destructive', title: 'Load failed', description: e.message });
+      setArticles([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleFeaturedImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Use validation utility
     const validation = validateImageFile(file);
     if (!validation.valid) {
-      toast({ variant: 'destructive', title: 'File tidak valid', description: validation.error });
+      toast({ variant: 'destructive', title: 'File invalid', description: validation.error });
       return;
     }
 
     setUploadingImage(true);
     try {
-      // Simulate upload and get base64 data URL
-      const uploadResult = await simulateUpload(file, 'featured');
-      if (!uploadResult.success) {
-        throw new Error('Gagal memproses gambar');
-      }
-      
-      setFormData(prev => ({ 
-        ...prev, 
-        featuredImage: uploadResult.url,
-        featuredImageAlt: formData.featuredImageAlt || formData.title || 'Gambar Artikel',
-        featuredImageTitle: formData.featuredImageTitle || formData.title || 'Gambar Artikel'
-      }));
-      
-      toast({ title: 'Gambar diupload', description: MESSAGES.OPERATION_SUCCESS });
+      const reader = new FileReader();
+      reader.onload = () => {
+        setFormData(prev => ({ 
+          ...prev, 
+          featuredImage: reader.result,
+          featuredImageName: file.name
+        }));
+        featuredImageFileRef.current = file;
+      };
+      reader.readAsDataURL(file);
+      toast({ title: 'Image ready', description: 'Featured image ready to upload' });
     } catch (err) {
-      console.error('[NewsManager] Featured image upload failed:', err);
-      toast({ 
-        variant: 'destructive', 
-        title: 'Upload gagal', 
-        description: MESSAGES.OPERATION_FAILED
-      });
+      console.error('[NewsManager] Image prep failed:', err);
+      toast({ variant: 'destructive', title: 'Image prep failed', description: err.message });
     } finally {
       setUploadingImage(false);
       if (featuredImageInputRef.current) featuredImageInputRef.current.value = '';
     }
-  };
-
-  const handleSeoChange = (field, value) => {
-    let nextValue = value;
-    if (field === 'focusKeyphrase') {
-      nextValue = limitFocusWords(value).toLowerCase().trim();
-    }
-    if (field === 'metaDescription') nextValue = limitMetaDescription(value);
-    if (field === 'slug') nextValue = sanitizeSlug(value);
-    setSeoData(prev => ({ ...prev, [field]: nextValue }));
-    setSeoEdited(prev => ({ ...prev, [field]: true }));
   };
 
   const handleCreateNew = () => {
@@ -356,59 +334,114 @@ const NewsManager = ({ user, channel }) => {
       title: '',
       content: '',
       excerpt: '',
-      category: 'Berita',
-      tags: '',
-        hashtags: '',
+      category: '',
+      tags: [],
       status: 'draft',
       featuredImage: '',
       featuredImageAlt: '',
-      featuredImageTitle: '',
       featuredImageName: ''
     });
-    setSeoData(ensureSeoObject());
-    setSeoEdited({
-      focusKeyphrase: false,
-      seoTitle: false,
-      slug: false,
-      metaDescription: false
+    setSeoData({
+      focusKeyphrase: '',
+      seoTitle: '',
+      slug: '',
+      metaDescription: '',
+      readabilityScore: 0,
+      seoScore: 0,
+      keywordSuggestions: [],
+      aiNotes: [],
+      lsiKeywords: [],
+      ctrScore: 0
     });
     setView('editor');
+  };
+
+  const handleSave = async () => {
+    if (!formData.title || !formData.content) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Title and content required' });
+      return;
+    }
+
+    try {
+      const slug = formData.title.toLowerCase().replace(/[^a-z0-9\-]/g, '-').replace(/-+/g, '-').slice(0, 120);
+      
+      if (currentArticle) {
+        await updateArticle({
+          id: currentArticle.id,
+          title: formData.title,
+          slug: currentArticle.slug || slug,
+          content: formData.content,
+          excerpt: formData.excerpt,
+          category: formData.category,
+          tags: Array.isArray(formData.tags) ? formData.tags : [],
+          status: formData.status,
+          seo_title: seoData.seoTitle,
+          seo_description: seoData.metaDescription,
+          featured_image: featuredImageFileRef.current,
+          keep_image: !featuredImageFileRef.current
+        });
+        toast({ title: 'Article updated' });
+      } else {
+        await createArticle({
+          title: formData.title,
+          slug,
+          content: formData.content,
+          excerpt: formData.excerpt,
+          category: formData.category,
+          tags: Array.isArray(formData.tags) ? formData.tags : [],
+          status: formData.status,
+          seo_title: seoData.seoTitle,
+          seo_description: seoData.metaDescription,
+          featured_image: featuredImageFileRef.current
+        });
+        toast({ title: 'Article created' });
+      }
+      
+      setView('list');
+      featuredImageFileRef.current = null;
+      await loadArticles();
+    } catch (err) {
+      console.error('[NewsManager] Save failed:', err);
+      toast({ variant: 'destructive', title: 'Save failed', description: err.message });
+    }
   };
 
   const handleEdit = (article) => {
     setCurrentArticle(article);
     setFormData({
       title: article.title,
-      content: article.content,
-      excerpt: article.excerpt,
-      category: article.category,
-      tags: article.tags,
-        hashtags: Array.isArray(article.hashtags) ? article.hashtags.join(', ') : '',
+      content: article.content_html || '',
+      excerpt: article.excerpt || '',
+      category: article.category || '',
+      tags: Array.isArray(article.tags) ? article.tags : (article.tags_json ? JSON.parse(article.tags_json) : []),
       status: article.status,
-      featuredImage: article.featuredImage,
-      featuredImageAlt: article.featuredImageAlt || '',
-      featuredImageTitle: article.featuredImageTitle || '',
-      featuredImageName: ''
+      featuredImage: article.featured_image_url || '',
+      featuredImageAlt: article.featured_image_alt || '',
+      featuredImageName: article.featured_image || ''
     });
-    const safeSeo = ensureSeoObject(article.seo);
     setSeoData({
-      ...safeSeo,
-      slug: safeSeo.slug || article.slug || ''
-    });
-    setSeoEdited({
-      focusKeyphrase: !!safeSeo.focusKeyphrase,
-      seoTitle: !!safeSeo.seoTitle,
-      slug: !!(safeSeo.slug || article.slug),
-      metaDescription: !!safeSeo.metaDescription
+      focusKeyphrase: '',
+      seoTitle: article.seo_title || '',
+      slug: article.slug,
+      metaDescription: article.seo_description || '',
+      readabilityScore: 0,
+      seoScore: 0,
+      keywordSuggestions: [],
+      aiNotes: [],
+      lsiKeywords: [],
+      ctrScore: 0
     });
     setView('editor');
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this article?')) {
-      db.deleteNews(id, user.id);
-      loadArticles();
-      toast({ title: "Article deleted" });
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this article?')) return;
+    try {
+      await deleteArticle(id);
+      toast({ title: 'Article deleted' });
+      await loadArticles();
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Delete failed', description: err.message });
     }
   };
 
@@ -797,24 +830,29 @@ const NewsManager = ({ user, channel }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {articles
-                .filter(a => a.title.toLowerCase().includes(filter.toLowerCase()))
-                .map(article => (
-                <tr key={article.id} className="hover:bg-gray-50/50 transition-colors group">
-                  <td className="p-4">
-                    <div className="font-bold text-gray-800 mb-1">{article.title}</div>
-                    <div className="text-xs text-gray-500 flex gap-2">
-                       <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">{article.category}</span>
-                       {article.tags && <span>• {article.tags}</span>}
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
-                        {article.authorName?.charAt(0)}
+              {loading ? (
+                <tr><td colSpan="5" className="p-4 text-center text-gray-500">Loading...</td></tr>
+              ) : articles.length === 0 ? (
+                <tr><td colSpan="5" className="p-4 text-center text-gray-500">No articles yet</td></tr>
+              ) : (
+                articles
+                  .filter(a => a.title.toLowerCase().includes(filter.toLowerCase()))
+                  .map(article => (
+                  <tr key={article.id} className="hover:bg-gray-50/50 transition-colors group">
+                    <td className="p-4">
+                      <div className="font-bold text-gray-800 mb-1">{article.title}</div>
+                      <div className="text-xs text-gray-500 flex gap-2">
+                         {article.category && <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">{article.category}</span>}
+                         {article.tags && article.tags.length > 0 && <span>• {article.tags.join(', ')}</span>}
                       </div>
-                      <span className="text-gray-600">{article.authorName}</span>
-                    </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
+                          {article.author_name?.charAt(0) || 'A'}
+                        </div>
+                        <span className="text-gray-600">{article.author_name}</span>
+                      </div>
                   </td>
                   <td className="p-4">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
@@ -826,13 +864,10 @@ const NewsManager = ({ user, channel }) => {
                     </span>
                   </td>
                   <td className="p-4 text-gray-500">
-                    {article.createdAt ? new Date(article.createdAt).toLocaleDateString('id-ID') : 'Tanggal tidak tersedia'}
+                    {article.created_at ? new Date(article.created_at).toLocaleDateString('id-ID') : 'N/A'}
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                      <button className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg" title="Preview" onClick={() => window.open(`/preview/article/${article.id}`, '_blank')}>
-                        <Eye size={16} />
-                      </button>
                       <button 
                         onClick={() => handleEdit(article)}
                         className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg" title="Edit"
@@ -850,7 +885,8 @@ const NewsManager = ({ user, channel }) => {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>

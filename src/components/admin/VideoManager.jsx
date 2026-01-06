@@ -2,10 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, Pencil, GripVertical, Youtube, Video as VideoIcon, ExternalLink } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { db } from '@/lib/db';
 import { extractYouTubeId, getYouTubeThumbnail } from '@/lib/api-utils';
-import { videosStorage } from '@/lib/staticStorage';
-import { STATIC_MODE, MESSAGES } from '@/config/staticMode';
+import { listVideos, createVideo, updateVideo, deleteVideo, reorderVideos } from '@/lib/videosApi';
+import { MESSAGES } from '@/config/staticMode';
 
 const VideoManager = ({ user }) => {
   const { toast } = useToast();
@@ -17,10 +16,19 @@ const VideoManager = ({ user }) => {
   const isSuperadmin = user?.role === 'Superadmin';
 
   useEffect(() => {
-    const load = () => {
+    const load = async () => {
       try {
-        const videos = videosStorage.getAll();
-        setVideos(videos || []);
+        const data = await listVideos({ includeUnpublished: true });
+        const items = (data.items || []).map(v => ({
+          id: v.id,
+          title: v.title,
+          description: v.description || '',
+          videoType: 'youtube',
+          url: `https://www.youtube.com/embed/${v.youtube_id}`,
+          thumbnail: v.thumbnail_url || getYouTubeThumbnail(v.youtube_id),
+          category: ''
+        }));
+        setVideos(items);
       } catch (e) {
         console.error('[VideoManager] Load failed:', e);
         toast({ variant: 'destructive', title: 'Gagal memuat video', description: e.message });
@@ -70,15 +78,18 @@ const VideoManager = ({ user }) => {
       };
 
       if (form.id) {
-        videosStorage.update(form.id, videoData);
+        const ytId = extractYouTubeId(form.url);
+        await updateVideo({ id: form.id, title: videoData.title, youtube_id: ytId, thumbnail_url: videoData.thumbnail, description: videoData.description });
         toast({ title: 'Perubahan disimpan', description: MESSAGES.OPERATION_SUCCESS });
       } else {
-        videosStorage.add(videoData);
+        const ytId = extractYouTubeId(form.url);
+        await createVideo({ title: videoData.title, youtube_id: ytId, thumbnail_url: videoData.thumbnail, description: videoData.description });
         toast({ title: 'Video ditambahkan', description: MESSAGES.OPERATION_SUCCESS });
       }
 
-      const updatedVideos = videosStorage.getAll();
-      setVideos(updatedVideos);
+      const data = await listVideos({ includeUnpublished: true });
+      const items = (data.items || []).map(v => ({ id: v.id, title: v.title, description: v.description || '', videoType: 'youtube', url: `https://www.youtube.com/embed/${v.youtube_id}`, thumbnail: v.thumbnail_url || getYouTubeThumbnail(v.youtube_id), category: '' }));
+      setVideos(items);
       resetForm();
     } catch (err) {
       console.error('[VideoManager] Submit failed:', err);
@@ -106,9 +117,10 @@ const VideoManager = ({ user }) => {
     const confirmed = window.confirm('Apakah Anda yakin ingin menghapus video ini?');
     if (!confirmed) return;
     
-    videosStorage.delete(id);
-    const updatedVideos = videosStorage.getAll();
-    setVideos(updatedVideos);
+    await deleteVideo(id);
+    const data = await listVideos({ includeUnpublished: true });
+    const items = (data.items || []).map(v => ({ id: v.id, title: v.title, description: v.description || '', videoType: 'youtube', url: `https://www.youtube.com/embed/${v.youtube_id}`, thumbnail: v.thumbnail_url || getYouTubeThumbnail(v.youtube_id), category: '' }));
+    setVideos(items);
     
     toast({ title: 'Video dihapus', description: 'Data sudah dihapus' });
     if (form.id === id) resetForm();
@@ -129,44 +141,13 @@ const VideoManager = ({ user }) => {
     setVideos(reordered);
     
     const order = reordered.map(v => v.id);
-    videosStorage.reorder(order);
+    await reorderVideos(order);
     
     toast({ title: 'Urutan disimpan', description: 'Urutan video diperbarui' });
   };
 
   const handleImportDefaults = () => {
-    const confirmed = window.confirm('Import video default? Akan ditambahkan ke daftar yang ada.');
-    if (!confirmed) return;
-    
-    try {
-      const existing = videosStorage.getAll();
-      if (existing.length > 0) {
-        toast({ title: 'Import dilewati', description: 'Data default sudah pernah diimport' });
-        return;
-      }
-      
-      const defaultVideo = {
-        title: 'Profil Sekolah',
-        description: 'Video profil SMP Muhammadiyah 35 Jakarta',
-        videoType: 'youtube',
-        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        thumbnail: getYouTubeThumbnail('dQw4w9WgXcQ'),
-        category: 'Profil'
-      };
-      
-      videosStorage.add(defaultVideo);
-      const updatedVideos = videosStorage.getAll();
-      setVideos(updatedVideos);
-      
-      toast({ title: 'Import berhasil', description: 'Ditambahkan 1 video' });
-    } catch (e) {
-      console.error('[VideoManager] Import failed:', e);
-      toast({ 
-        variant: 'destructive', 
-        title: 'Import gagal', 
-        description: MESSAGES.OPERATION_FAILED 
-      });
-    }
+    toast({ title: 'Import dihilangkan', description: 'Gunakan tambah video untuk memasukkan konten.' });
   };
 
   if (!isSuperadmin) {
@@ -192,14 +173,7 @@ const VideoManager = ({ user }) => {
             Import Video Default
           </button>
           <button
-            onClick={() => {
-              try {
-                videosStorage.publish();
-                toast({ title: 'Publish Video', description: MESSAGES.PUBLISH_SUCCESS });
-              } catch (e) {
-                toast({ variant: 'destructive', title: 'Publish gagal', description: MESSAGES.OPERATION_FAILED });
-              }
-            }}
+            onClick={() => toast({ title: 'Publish Video', description: 'Publish is controlled via visibility in MySQL.' })}
             className="px-4 py-2 text-sm bg-[#5D9CEC] hover:bg-[#4A89DC] text-white rounded-lg font-medium transition-colors"
           >
             Publish Video
