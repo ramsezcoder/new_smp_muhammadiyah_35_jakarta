@@ -12,8 +12,27 @@ export async function apiLogin(email, password) {
 }
 
 export async function apiVerify(token) {
-  const res = await fetch('/api/auth/verify.php', { headers: { Authorization: `Bearer ${token}` }, credentials: 'include' });
+  const res = await fetch('/api/auth/verify.php', { 
+    headers: { Authorization: `Bearer ${token}` }, 
+    credentials: 'include' 
+  });
   if (!res.ok) return null;
   const json = await res.json();
   return json.success ? json.data.user : null;
+}
+
+export async function apiLogout(token) {
+  try {
+    const res = await fetch('/api/auth/logout.php', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include'
+    });
+    if (!res.ok) return false;
+    const json = await res.json();
+    return json.success;
+  } catch (e) {
+    console.error('Logout error:', e);
+    return false;
+  }
 }

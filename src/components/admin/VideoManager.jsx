@@ -42,7 +42,7 @@ const VideoManager = ({ user }) => {
     setForm({ id: null, title: '', description: '', videoType: 'youtube', url: '', thumbnail: '', category: '' });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!form.title.trim() || !form.url.trim()) {
@@ -113,7 +113,7 @@ const VideoManager = ({ user }) => {
     });
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     const confirmed = window.confirm('Apakah Anda yakin ingin menghapus video ini?');
     if (!confirmed) return;
     
@@ -128,7 +128,7 @@ const VideoManager = ({ user }) => {
 
   const handleDragStart = (idx) => { dragIndex.current = idx; };
   const handleDragEnter = (idx) => { dragOver.current = idx; };
-  const handleDragEnd = () => {
+  const handleDragEnd = async () => {
     const from = dragIndex.current;
     const to = dragOver.current;
     dragIndex.current = null;

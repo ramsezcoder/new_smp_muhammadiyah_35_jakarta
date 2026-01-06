@@ -11,7 +11,7 @@ const SettingsManager = ({ user }) => {
     getSettings().then(setSettings).catch(() => setSettings({}));
   }, []);
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const newSettings = {

@@ -163,7 +163,7 @@ const StaffManager = ({ user }) => {
     setPhotoFile(null);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     const confirmed = window.confirm('Apakah Anda yakin ingin menghapus data staff ini?');
     if (!confirmed) return;
     
@@ -187,7 +187,7 @@ const StaffManager = ({ user }) => {
 
   const handleDragStart = (idx) => { dragIndex.current = idx; };
   const handleDragEnter = (idx) => { dragOver.current = idx; };
-  const handleDragEnd = () => {
+  const handleDragEnd = async () => {
     const from = dragIndex.current;
     const to = dragOver.current;
     dragIndex.current = null;

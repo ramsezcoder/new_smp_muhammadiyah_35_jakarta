@@ -83,6 +83,21 @@ CREATE TABLE IF NOT EXISTS users (
   UNIQUE KEY uniq_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Sessions table for token management
+CREATE TABLE IF NOT EXISTS sessions (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  session_token VARCHAR(500) NOT NULL,
+  user_agent VARCHAR(500) DEFAULT NULL,
+  ip_address VARCHAR(45) DEFAULT NULL,
+  expires_at DATETIME NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_token (session_token),
+  INDEX idx_user_id (user_id),
+  INDEX idx_expires (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Settings key/value storage
 CREATE TABLE IF NOT EXISTS settings (
   `key` VARCHAR(100) PRIMARY KEY,
