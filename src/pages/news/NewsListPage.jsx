@@ -108,23 +108,17 @@ const NewsListPage = () => {
     setLoading(true);
     setError(null);
     try {
-      // Try to fetch from API first
-      const allNews = await fetchNewsWithFallback(cat, 3000);
+      // Use db.getNews() to get all merged data (including importedPosts.json)
+      const allNews = db.getNews().filter(
+        (n) => n.status === 'published' && (!n.channel || n.channel === cat)
+      );
       
-      // If we got data from fallback, show the message
       if (allNews.length > 0) {
         const start = (currentPage - 1) * PAGE_SIZE;
         const paged = allNews.slice(start, start + PAGE_SIZE);
         setItems(paged);
         setTotalPages(Math.max(1, Math.ceil(allNews.length / PAGE_SIZE)));
         setPage(currentPage);
-        
-        // Check if this is fallback data by trying API first
-        try {
-          await fetch(`/api/news/list?category=${cat}`, { signal: AbortSignal.timeout(2000) });
-        } catch {
-          setError(MESSAGES.FALLBACK_NEWS);
-        }
       } else {
         throw new Error('No news available');
       }
@@ -132,7 +126,7 @@ const NewsListPage = () => {
       console.warn('[news] fetch failed:', err);
       setError(MESSAGES.FALLBACK_NEWS);
       
-      // Fallback to db.getNews()
+      // Fallback to db.getNews() again as last resort
       const all = db.getNews().filter(
         (n) => n.status === 'published' && (!n.channel || n.channel === cat)
       );

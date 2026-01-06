@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
+import { Lock, Mail, AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -41,6 +42,15 @@ const AdminLogin = ({ onLoginSuccess }) => {
 
   return (
     <div className="min-h-screen bg-[#E8F4F8] flex items-center justify-center p-4">
+      {/* Return to Home Button */}
+      <Link 
+        to="/" 
+        className="absolute top-6 left-6 flex items-center gap-2 text-gray-600 hover:text-[#5D9CEC] transition-colors font-medium text-sm"
+      >
+        <ArrowLeft size={18} />
+        Kembali ke Beranda
+      </Link>
+
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -6,8 +6,9 @@ import { ArrowLeft, X } from 'lucide-react';
 
 const PhotoGallery = () => {
   const [selectedImage, setSelectedImage] = useState(null);
+  const [photos, setPhotos] = useState([]);
 
-  const photos = [
+  const defaultPhotos = [
     { id: 1, title: "Upacara Bendera", category: "Kegiatan Rutin", image: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop" },
     { id: 2, title: "Kegiatan Pembelajaran", category: "Akademik", image: "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&h=600&fit=crop" },
     { id: 3, title: "Lomba Sains", category: "Prestasi", image: "https://images.unsplash.com/photo-1532153955177-f59af40d6472?w=800&h=600&fit=crop" },
@@ -21,6 +22,23 @@ const PhotoGallery = () => {
     { id: 11, title: "Kompetisi Robotik", category: "Prestasi", image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&h=600&fit=crop" },
     { id: 12, title: "Peringatan Hari Besar", category: "Keagamaan", image: "https://images.unsplash.com/photo-1544531586-fde5298cdd40?w=800&h=600&fit=crop" }
   ];
+
+  useEffect(() => {
+    // Load uploaded images from localStorage and merge with defaults
+    try {
+      const uploadedImages = JSON.parse(localStorage.getItem('gallery_uploads') || '[]');
+      const uploadedPhotos = uploadedImages.map((img, idx) => ({
+        id: img.id || 1000 + idx,
+        title: img.name || img.filename || 'Uploaded Photo',
+        category: 'Galeri Unggahan',
+        image: img.dataUrl || img.originalUrl || img.url
+      }));
+      setPhotos([...uploadedPhotos, ...defaultPhotos]);
+    } catch (err) {
+      console.warn('[gallery] Failed to load uploaded images:', err);
+      setPhotos(defaultPhotos);
+    }
+  }, []);
 
   const navigate = useNavigate();
 
@@ -67,10 +85,14 @@ const PhotoGallery = () => {
               className="group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all cursor-pointer"
               onClick={() => setSelectedImage(photo)}
             >
-              <div className="aspect-square overflow-hidden">
+              <div className="aspect-square overflow-hidden bg-gray-100">
                 <img 
                   src={photo.image} 
                   alt={photo.title}
+                  onError={(e) => {
+                    console.warn('[gallery] image failed to load:', photo.title);
+                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23e5e7eb" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="16" fill="%239ca3af" text-anchor="middle" dominant-baseline="middle"%3EImage not available%3C/text%3E%3C/svg%3E';
+                  }}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   loading="lazy"
                 />

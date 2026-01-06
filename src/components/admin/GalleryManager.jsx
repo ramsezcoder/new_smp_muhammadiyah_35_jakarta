@@ -136,11 +136,14 @@ const GalleryManager = ({ user }) => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleDeleteImage = (filename) => {
+  const handleDeleteImage = (imageId) => {
+    const image = images.find(img => img.id === imageId);
+    if (!image) return;
+    
     if (!window.confirm('Are you sure you want to delete this image?')) return;
 
     // Remove from state
-    const updated = images.filter(img => img.filename !== filename);
+    const updated = images.filter(img => img.id !== imageId);
     setImages(updated);
     localStorage.setItem('gallery_uploads', JSON.stringify(updated));
 
@@ -149,7 +152,7 @@ const GalleryManager = ({ user }) => {
       description: 'Image removed from gallery'
     });
 
-    // In production, call DELETE /api/upload/gallery/:filename
+    // In production, call DELETE /api/upload/gallery/:id
   };
 
   return (
@@ -224,14 +227,18 @@ const GalleryManager = ({ user }) => {
                 className="group relative bg-gray-100 rounded-lg overflow-hidden aspect-square"
               >
                 <img
-                  src={img.url}
-                  alt={img.filename}
+                  src={img.dataUrl || img.originalUrl || img.url}
+                  alt={img.filename || img.name}
+                  onError={(e) => {
+                    console.warn('[gallery] image failed to load:', img.filename);
+                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23e5e7eb" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="16" fill="%239ca3af" text-anchor="middle" dominant-baseline="middle"%3EImage not found%3C/text%3E%3C/svg%3E';
+                  }}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
 
                 {/* Delete Button */}
                 <button
-                  onClick={() => handleDeleteImage(img.filename)}
+                  onClick={() => handleDeleteImage(img.id)}
                   className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
                 >
                   <div className="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors">
@@ -241,7 +248,7 @@ const GalleryManager = ({ user }) => {
 
                 {/* Info */}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 group-hover:translate-y-0 translate-y-full transition-transform duration-300">
-                  <p className="text-white text-xs truncate">{img.filename}</p>
+                  <p className="text-white text-xs truncate">{img.filename || img.name}</p>
                   <p className="text-gray-300 text-xs">{(img.size / 1024).toFixed(0)} KB</p>
                 </div>
               </motion.div>
