@@ -2,3 +2,12 @@ node_modules
 dist
 .env
 .env.local
+build
+uploads
+
+# Local database config
+public/api/config.local.php
+
+# Uploaded files
+public/uploads/*
+!public/uploads/.htaccess

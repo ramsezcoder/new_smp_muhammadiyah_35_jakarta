@@ -59,7 +59,7 @@ export const videosStorage = {
     }).filter(Boolean);
     safeSetItem(STORAGE_KEYS.VIDEOS_DRAFT, ordered);
     return ordered;
-  }
+  },
 
   publish: () => {
     const videos = videosStorage.getAll();

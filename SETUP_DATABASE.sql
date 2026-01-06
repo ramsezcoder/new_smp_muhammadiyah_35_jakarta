@@ -1,0 +1,65 @@
+-- Quick Setup SQL for SMP Muhammadiyah 35 Jakarta
+-- Run this via phpMyAdmin after creating database
+
+-- 1. Gallery Images Table
+CREATE TABLE IF NOT EXISTS gallery_images (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  alt_text VARCHAR(255) DEFAULT '' NOT NULL,
+  filename VARCHAR(255) NOT NULL,
+  sort_order INT UNSIGNED NOT NULL DEFAULT 0,
+  is_published TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_sort (sort_order),
+  INDEX idx_published (is_published)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 2. Staff Table
+CREATE TABLE IF NOT EXISTS staff (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  role VARCHAR(255) NOT NULL DEFAULT '',
+  photo_filename VARCHAR(255) DEFAULT NULL,
+  bio TEXT,
+  sort_order INT UNSIGNED NOT NULL DEFAULT 0,
+  is_published TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_staff_sort (sort_order),
+  INDEX idx_staff_pub (is_published)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 3. Videos Table
+CREATE TABLE IF NOT EXISTS videos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  youtube_id VARCHAR(32) NOT NULL,
+  thumbnail_url VARCHAR(255) DEFAULT NULL,
+  description TEXT,
+  sort_order INT UNSIGNED NOT NULL DEFAULT 0,
+  is_published TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_yt (youtube_id),
+  INDEX idx_videos_sort (sort_order),
+  INDEX idx_videos_pub (is_published)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 4. Articles Table (for future use)
+CREATE TABLE IF NOT EXISTS articles (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) NOT NULL,
+  content_html MEDIUMTEXT NOT NULL,
+  featured_image VARCHAR(255) DEFAULT NULL,
+  status ENUM('draft','published') NOT NULL DEFAULT 'draft',
+  published_at DATETIME DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_slug (slug),
+  INDEX idx_status (status),
+  INDEX idx_published_at (published_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Done! Tables created successfully.
