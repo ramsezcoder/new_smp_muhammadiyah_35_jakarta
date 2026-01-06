@@ -10,15 +10,15 @@ export default defineConfig({
       '@': path.resolve(process.cwd(), './src'),
     },
   },
+  build: {
+    // Ensure JSON files are included in the bundle
+    assetsInclude: ['**/*.json'],
+    outDir: 'dist',
+    sourcemap: false,
+  },
   server: {
     port: 3000,
     host: true,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
+    // Removed API proxy - use static fallback instead
   }
 });
