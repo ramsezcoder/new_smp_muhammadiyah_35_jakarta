@@ -14,6 +14,7 @@ const GalleryManager = ({ user }) => {
   const [uploading, setUploading] = useState(false);
   const [modalImage, setModalImage] = useState(null);
   const [renameValue, setRenameValue] = useState('');
+  const [seoFields, setSeoFields] = useState({ altText: '', seoTitle: '', description: '' });
   const fileInputRef = useRef(null);
   const dragIndex = useRef(null);
   const dragOver = useRef(null);
@@ -24,6 +25,14 @@ const GalleryManager = ({ user }) => {
     setImages(db.getGallery());
     setLoading(false);
   }, []);
+
+  const handleImportDefaults = () => {
+    const confirmed = window.confirm('Import foto galeri default? Akan ditambahkan ke galeri yang ada.');
+    if (!confirmed) return;
+    const merged = db.importDefaultGallery(user?.id);
+    setImages(merged);
+    toast({ title: 'Import berhasil', description: `Foto default ditambahkan ke galeri` });
+  };
 
   const toDataUrl = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -88,11 +97,27 @@ const GalleryManager = ({ user }) => {
 
   const handleRename = () => {
     if (!modalImage || !renameValue.trim()) return;
+    const updatedItem = {
+      ...modalImage,
+      name: renameValue.trim(),
+      altText: seoFields.altText.trim() || `${renameValue.trim()} SMP Muhammadiyah 35 Jakarta`,
+      seoTitle: seoFields.seoTitle.trim() || renameValue.trim(),
+      description: seoFields.description.trim()
+    };
     const updated = db.renameGalleryItem(modalImage.id, renameValue.trim(), user?.id);
     if (!updated) return;
+    
+    // Update with SEO fields
+    const allItems = db.getGallery();
+    const idx = allItems.findIndex(i => i.id === modalImage.id);
+    if (idx !== -1) {
+      allItems[idx] = { ...allItems[idx], ...updatedItem };
+      db._saveData('gallery_uploads', allItems);
+    }
+    
     setImages(db.getGallery());
-    setModalImage(updated);
-    toast({ title: 'Nama diperbarui', description: 'Filename SEO telah diganti' });
+    setModalImage({...updated, ...updatedItem});
+    toast({ title: 'Data diperbarui', description: 'Nama dan SEO fields telah disimpan' });
   };
 
   const handleDragStart = (idx) => { dragIndex.current = idx; };
@@ -113,7 +138,12 @@ const GalleryManager = ({ user }) => {
 
   const openModal = (img) => {
     setModalImage(img);
-    setRenameValue(img.name || img.filename || '');
+    setRenameValue(img.name || db.formatName(img.filename) || '');
+    setSeoFields({
+      altText: img.altText || '',
+      seoTitle: img.seoTitle || '',
+      description: img.description || ''
+    });
   };
 
   if (!isSuperadmin) {
@@ -126,9 +156,17 @@ const GalleryManager = ({ user }) => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Gallery Manager</h2>
-        <p className="text-gray-600">Upload, rename, urutkan, dan kelola galeri foto sekolah.</p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">Gallery Manager</h2>
+          <p className="text-gray-600">Upload, rename, urutkan, dan kelola galeri foto sekolah.</p>
+        </div>
+        <button
+          onClick={handleImportDefaults}
+          className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 font-medium transition-colors"
+        >
+          Import Foto Default
+        </button>
       </div>
 
       <motion.div
@@ -216,8 +254,8 @@ const GalleryManager = ({ user }) => {
                 </div>
 
                 <div className="absolute bottom-0 left-0 right-0 p-2 text-white text-xs space-y-1">
-                  <p className="font-semibold truncate">{img.name || img.filename}</p>
-                  <p className="text-white/80 truncate">{img.filename}</p>
+                  <p className="font-semibold truncate">{db.formatName(img.name || img.filename || 'Foto')}</p>
+                  <p className="text-white/70 truncate text-[10px]">{img.filename}</p>
                 </div>
 
                 <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -296,27 +334,56 @@ const GalleryManager = ({ user }) => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700">Rename for SEO</label>
-                  <div className="flex gap-3">
-                    <input
-                      value={renameValue}
-                      onChange={(e) => setRenameValue(e.target.value)}
-                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                      placeholder="Masukkan nama baru"
-                    />
-                    <button
-                      onClick={handleRename}
-                      className="px-4 py-2 bg-[#5D9CEC] text-white rounded-lg hover:bg-[#4A89DC] flex items-center gap-2"
-                    >
-                      <Pencil size={16} />
-                      Simpan
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500">Format otomatis: slugified-title-timestamp.webp</p>
+                  <label className="text-sm font-semibold text-gray-700">Nama Foto (Display Name)</label>
+                  <input
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    placeholder="Masukkan nama foto"
+                  />
+                  <p className="text-xs text-gray-500">Format filename otomatis: slugified-title-timestamp.webp</p>
                 </div>
 
-                <div className="flex items-center justify-between pt-2">
-                  <div className="text-sm text-gray-500">Hanya Superadmin yang dapat rename, delete, dan reorder.</div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700">SEO Title</label>
+                  <input
+                    value={seoFields.seoTitle}
+                    onChange={(e) => setSeoFields(prev => ({ ...prev, seoTitle: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    placeholder="Contoh: Kegiatan Pembelajaran"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700">Alt Text (SEO)</label>
+                  <input
+                    value={seoFields.altText}
+                    onChange={(e) => setSeoFields(prev => ({ ...prev, altText: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    placeholder="Deskripsi gambar untuk SEO"
+                  />
+                  <p className="text-xs text-gray-500">Digunakan untuk atribut alt pada HTML</p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700">Description (Opsional)</label>
+                  <textarea
+                    value={seoFields.description}
+                    onChange={(e) => setSeoFields(prev => ({ ...prev, description: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    placeholder="Deskripsi lengkap (opsional)"
+                    rows="2"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-2 gap-3">
+                  <button
+                    onClick={handleRename}
+                    className="px-6 py-2.5 bg-[#5D9CEC] text-white rounded-lg hover:bg-[#4A89DC] flex items-center gap-2 font-medium"
+                  >
+                    <Pencil size={16} />
+                    Simpan Perubahan
+                  </button>
                   <button
                     onClick={() => handleDeleteImage(modalImage.id)}
                     className="text-red-600 hover:text-red-700 font-semibold flex items-center gap-2"

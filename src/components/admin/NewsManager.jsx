@@ -16,6 +16,11 @@ const NewsManager = ({ user, channel }) => {
   const [articles, setArticles] = useState([]);
   const [currentArticle, setCurrentArticle] = useState(null);
   const [filter, setFilter] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const featuredImageInputRef = React.useRef(null);
+
+  const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+  const MAX_IMAGE_SIZE = 4 * 1024 * 1024; // 4MB
 
   // Form State
   const [formData, setFormData] = useState({
@@ -281,6 +286,40 @@ const NewsManager = ({ user, channel }) => {
     setArticles(allNews.filter(a => !channel || a.channel === channel));
   };
 
+  const toDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => resolve(event.target?.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const handleFeaturedImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      toast({ variant: 'destructive', title: 'Format tidak didukung', description: 'Gunakan JPG, PNG, atau WebP' });
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      toast({ variant: 'destructive', title: 'File terlalu besar', description: 'Maksimal 4MB' });
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const dataUrl = await toDataUrl(file);
+      setFormData(prev => ({ ...prev, featuredImage: dataUrl }));
+      toast({ title: 'Gambar diupload', description: 'Featured image berhasil diupload' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Upload gagal', description: err.message || 'Coba lagi' });
+    } finally {
+      setUploadingImage(false);
+      if (featuredImageInputRef.current) featuredImageInputRef.current.value = '';
+    }
+  };
+
   const handleSeoChange = (field, value) => {
     let nextValue = value;
     if (field === 'focusKeyphrase') {
@@ -521,19 +560,43 @@ const NewsManager = ({ user, channel }) => {
                 <ImageIcon size={18} className="text-[#5D9CEC]" /> Featured Image
               </h3>
               <div className="space-y-3">
+                {formData.featuredImage && (
+                  <div className="relative">
+                    <img src={formData.featuredImage} alt="Preview" className="w-full h-48 object-cover rounded-lg border border-gray-200" />
+                    <button
+                      onClick={() => setFormData({...formData, featuredImage: ''})}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                )}
+                <input
+                  ref={featuredImageInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFeaturedImageUpload}
+                  disabled={uploadingImage}
+                  className="hidden"
+                />
+                <Button 
+                  type="button"
+                  onClick={() => featuredImageInputRef.current?.click()}
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  disabled={uploadingImage}
+                >
+                  {uploadingImage ? 'Uploading...' : (formData.featuredImage ? 'Ganti Gambar' : 'Upload Gambar')}
+                </Button>
                 <input
                   type="text"
                   value={formData.featuredImage}
                   onChange={e => setFormData({...formData, featuredImage: e.target.value})}
-                  placeholder="Image URL..."
+                  placeholder="Atau paste URL gambar..."
                   className="w-full p-2 border rounded-lg text-sm"
                 />
-                {formData.featuredImage && (
-                  <img src={formData.featuredImage} alt="Preview" className="w-full h-32 object-cover rounded-lg" />
-                )}
-                <Button variant="outline" size="sm" className="w-full">
-                   Select from Media
-                </Button>
+                <p className="text-xs text-gray-500">JPG, PNG, WebP • Max 4MB</p>
               </div>
             </div>
 

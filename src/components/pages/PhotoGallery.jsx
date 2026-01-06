@@ -27,12 +27,15 @@ const PhotoGallery = () => {
   useEffect(() => {
     const stored = db.getGallery();
     if (stored.length) {
-      setPhotos(stored.map((img, idx) => ({
+      const uploadedPhotos = stored.map((img, idx) => ({
         id: img.id || idx,
-        title: img.name || img.filename || 'Dokumentasi Sekolah',
-        category: 'Galeri Unggahan',
-        image: img.dataUrl || img.originalUrl || img.url
-      })).concat(defaultPhotos));
+        title: db.formatName(img.name || img.filename) || 'Dokumentasi Sekolah',
+        category: img.category || 'Galeri Unggahan',
+        image: img.dataUrl || img.originalUrl || img.url,
+        altText: img.altText || `${img.name || 'Foto'} SMP Muhammadiyah 35 Jakarta`,
+        seoTitle: img.seoTitle || img.name || 'Dokumentasi'
+      }));
+      setPhotos([...uploadedPhotos, ...defaultPhotos]);
       return;
     }
 
@@ -87,7 +90,8 @@ const PhotoGallery = () => {
               <div className="aspect-square overflow-hidden bg-gray-100">
                 <img 
                   src={photo.image} 
-                  alt={photo.title}
+                  alt={photo.altText || photo.title}
+                  title={photo.seoTitle || photo.title}
                   onError={(e) => {
                     console.warn('[gallery] image failed to load:', photo.title);
                     e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23e5e7eb" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="16" fill="%239ca3af" text-anchor="middle" dominant-baseline="middle"%3EImage not available%3C/text%3E%3C/svg%3E';

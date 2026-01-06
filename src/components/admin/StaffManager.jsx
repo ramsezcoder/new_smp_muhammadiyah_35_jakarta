@@ -22,6 +22,14 @@ const StaffManager = ({ user }) => {
     setStaff(db.getStaffProfiles());
   }, []);
 
+  const handleImportDefaults = () => {
+    const confirmed = window.confirm('Import data staff default? (Hanya jika kosong)');
+    if (!confirmed) return;
+    const imported = db.importDefaultStaff(user?.id);
+    setStaff(imported);
+    toast({ title: 'Import berhasil', description: `${imported.length} staff diimport` });
+  };
+
   const toDataUrl = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (event) => resolve(event.target?.result);
@@ -133,12 +141,22 @@ const StaffManager = ({ user }) => {
           <h2 className="text-3xl font-bold text-gray-800 mb-1">Staff Profile Manager</h2>
           <p className="text-gray-600">Tambah, edit, hapus, dan atur urutan guru & karyawan.</p>
         </div>
-        <button
-          onClick={resetForm}
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
-          Reset Form
-        </button>
+        <div className="flex items-center gap-2">
+          {staff.length === 0 && (
+            <button
+              onClick={handleImportDefaults}
+              className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 font-medium transition-colors"
+            >
+              Import Data Default
+            </button>
+          )}
+          <button
+            onClick={resetForm}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            Reset Form
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

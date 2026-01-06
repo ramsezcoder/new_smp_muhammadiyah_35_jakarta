@@ -12,20 +12,22 @@ const GallerySection = () => {
     if (stored.length) {
       setGalleryImages(stored.slice(0, 6).map((img, idx) => ({
         id: img.id || idx,
-        caption: img.name || img.filename || 'Galeri Sekolah',
-        description: 'Dokumentasi kegiatan sekolah',
+        caption: db.formatName(img.name || img.filename) || 'Galeri Sekolah',
+        description: img.description || 'Dokumentasi kegiatan sekolah',
         src: img.dataUrl || img.originalUrl || img.url,
+        altText: img.altText || `${img.name || 'Foto'} SMP Muhammadiyah 35 Jakarta`,
+        seoTitle: img.seoTitle || img.name || 'Dokumentasi'
       })));
       return;
     }
 
     setGalleryImages([
-      { id: 1, caption: 'Kegiatan Pembelajaran', description: 'Suasana belajar yang kondusif di kelas', src: 'https://images.unsplash.com/photo-1509062522246-3755977927d7' },
-      { id: 2, caption: 'Laboratorium Komputer', description: 'Fasilitas komputer modern untuk siswa', src: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3' },
-      { id: 3, caption: 'Perpustakaan Sekolah', description: 'Koleksi buku lengkap untuk literasi', src: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570' },
-      { id: 4, caption: 'Kegiatan Tahfidz', description: 'Pembiasaan menghafal Al-Quran', src: 'https://images.unsplash.com/photo-1584286595398-a59f21d313f5' },
-      { id: 5, caption: 'Lapangan Olahraga', description: 'Area olahraga yang luas dan representatif', src: 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e' },
-      { id: 6, caption: 'Ekstrakurikuler', description: 'Pengembangan minat dan bakat siswa', src: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18' },
+      { id: 1, caption: 'Kegiatan Pembelajaran', description: 'Suasana belajar yang kondusif di kelas', src: 'https://images.unsplash.com/photo-1509062522246-3755977927d7', altText: 'Kegiatan pembelajaran di kelas SMP Muhammadiyah 35 Jakarta', seoTitle: 'Kegiatan Pembelajaran' },
+      { id: 2, caption: 'Laboratorium Komputer', description: 'Fasilitas komputer modern untuk siswa', src: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3', altText: 'Laboratorium komputer SMP Muhammadiyah 35 Jakarta', seoTitle: 'Laboratorium Komputer' },
+      { id: 3, caption: 'Perpustakaan Sekolah', description: 'Koleksi buku lengkap untuk literasi', src: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570', altText: 'Perpustakaan SMP Muhammadiyah 35 Jakarta', seoTitle: 'Perpustakaan' },
+      { id: 4, caption: 'Kegiatan Tahfidz', description: 'Pembiasaan menghafal Al-Quran', src: 'https://images.unsplash.com/photo-1584286595398-a59f21d313f5', altText: 'Kegiatan tahfidz Al-Quran', seoTitle: 'Tahfidz' },
+      { id: 5, caption: 'Lapangan Olahraga', description: 'Area olahraga yang luas dan representatif', src: 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e', altText: 'Lapangan olahraga sekolah', seoTitle: 'Lapangan Olahraga' },
+      { id: 6, caption: 'Ekstrakurikuler', description: 'Pengembangan minat dan bakat siswa', src: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18', altText: 'Kegiatan ekstrakurikuler siswa', seoTitle: 'Ekstrakurikuler' },
     ]);
   }, []);
 
@@ -61,7 +63,8 @@ const GallerySection = () => {
             >
               <img 
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                alt={image.caption}
+                alt={image.altText || image.caption}
+                title={image.seoTitle || image.caption}
                 src={image.src} 
                 loading="lazy"
               />

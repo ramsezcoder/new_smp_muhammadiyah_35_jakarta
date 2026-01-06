@@ -33,10 +33,14 @@ const StaffPage = () => {
         name: item.name,
         role: item.position || item.role || 'Staf Sekolah',
         image: item.photo || item.image || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop',
+        altText: `${item.name} - ${item.position || item.role || 'Staf'} SMP Muhammadiyah 35 Jakarta`
       })));
       setUsingFallback(false);
     } else {
-      setStaffMembers(defaultStaff);
+      setStaffMembers(defaultStaff.map(s => ({
+        ...s,
+        altText: `${s.name} - ${s.role} SMP Muhammadiyah 35 Jakarta`
+      })));
       setUsingFallback(true);
     }
   }, []);
@@ -91,7 +95,8 @@ const StaffPage = () => {
                 <div className="aspect-square overflow-hidden bg-gradient-to-br from-[#D4E8F0] to-[#E8F4F8]">
                   <img 
                     src={staff.image}
-                    alt={staff.name}
+                    alt={staff.altText || staff.name}
+                    title={`${staff.name} - ${staff.role}`}
                     loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     onError={(e) => {

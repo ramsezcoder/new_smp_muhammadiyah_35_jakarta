@@ -5,6 +5,7 @@ import importedPosts from '@/data/importedPosts.json';
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1509062522246-3755977927d7';
 const GALLERY_KEY = 'gallery_uploads';
 const STAFF_KEY = 'staff_profiles';
+const VIDEO_KEY = 'video_gallery';
 
 const slugify = (text = '') => text
   .toString()
@@ -14,6 +15,11 @@ const slugify = (text = '') => text
   .replace(/\s+/g, '-')
   .replace(/-+/g, '-')
   .replace(/^-+|-+$/g, '');
+
+const formatName = (name) => {
+  if (!name) return '';
+  return name.replace(/\.(jpg|jpeg|png|webp|gif|svg)$/i, '');
+};
 
 const normalizeDate = (value) => {
   if (!value) return new Date().toISOString();
@@ -143,6 +149,42 @@ const DEFAULT_SETTINGS = {
   maxUploadSize: 5, // MB
   maintenanceMode: false
 };
+
+const DEFAULT_STAFF = [
+  { name: "R. Agung Budi Laksono", position: "Waka Sarpras", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop", active: true },
+  { name: "Rubiyatun", position: "Waka Kesiswaan", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop", active: true },
+  { name: "Istiana", position: "Waka Kurikulum", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop", active: true },
+  { name: "Rini Yuni Astuti", position: "Waka Humas", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop", active: true },
+  { name: "Suparliyanto", position: "PLT Kasubag TU", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop", active: true },
+  { name: "Sri Rahayu", position: "Guru Kimia", image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=300&h=300&fit=crop", active: true },
+  { name: "Boini", position: "Guru Matematika", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&h=300&fit=crop", active: true },
+  { name: "Arief Teguh Rahardjo", position: "Guru Matematika", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&h=300&fit=crop", active: true },
+  { name: "Dahrotun", position: "Guru Bahasa Indonesia", image: "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=300&h=300&fit=crop", active: true },
+  { name: "Dwijatno Hamardianto", position: "Guru BK", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop", active: true },
+  { name: "Agus Soedarsono", position: "Guru Matematika", image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&h=300&fit=crop", active: true },
+  { name: "Rahayu Wuryaningsih", position: "Guru Bahasa Jawa", image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&h=300&fit=crop", active: true },
+];
+
+const DEFAULT_GALLERY = [
+  { name: "Upacara Bendera", category: "Kegiatan Rutin", url: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop", altText: "Upacara bendera rutin SMP Muhammadiyah 35 Jakarta", seoTitle: "Upacara Bendera" },
+  { name: "Kegiatan Pembelajaran", category: "Akademik", url: "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&h=600&fit=crop", altText: "Kegiatan pembelajaran di kelas", seoTitle: "Pembelajaran di Kelas" },
+  { name: "Lomba Sains", category: "Prestasi", url: "https://images.unsplash.com/photo-1532153955177-f59af40d6472?w=800&h=600&fit=crop", altText: "Lomba sains antar sekolah", seoTitle: "Lomba Sains" },
+  { name: "Kegiatan Olahraga", category: "Ekstrakurikuler", url: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&h=600&fit=crop", altText: "Kegiatan olahraga siswa", seoTitle: "Olahraga" },
+  { name: "Pesantren Kilat", category: "Keagamaan", url: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&h=600&fit=crop", altText: "Pesantren kilat ramadan", seoTitle: "Pesantren Kilat" },
+  { name: "Praktikum Laboratorium", category: "Akademik", url: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=800&h=600&fit=crop", altText: "Praktikum di laboratorium", seoTitle: "Praktikum Lab" },
+  { name: "Pentas Seni", category: "Ekstrakurikuler", url: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&h=600&fit=crop", altText: "Pentas seni tahunan", seoTitle: "Pentas Seni" },
+  { name: "Wisuda Angkatan", category: "Kegiatan Rutin", url: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&h=600&fit=crop", altText: "Wisuda angkatan", seoTitle: "Wisuda" },
+  { name: "Kegiatan Pramuka", category: "Ekstrakurikuler", url: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=800&h=600&fit=crop", altText: "Kegiatan pramuka", seoTitle: "Pramuka" },
+  { name: "Kunjungan Museum", category: "Study Tour", url: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&h=600&fit=crop", altText: "Kunjungan ke museum", seoTitle: "Kunjungan Museum" },
+  { name: "Kompetisi Robotik", category: "Prestasi", url: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&h=600&fit=crop", altText: "Kompetisi robotik", seoTitle: "Robotik" },
+  { name: "Peringatan Hari Besar", category: "Keagamaan", url: "https://images.unsplash.com/photo-1544531586-fde5298cdd40?w=800&h=600&fit=crop", altText: "Peringatan hari besar Islam", seoTitle: "Hari Besar" }
+];
+
+const DEFAULT_VIDEOS = [
+  { title: "Profil SMP Muhammadiyah 35 Jakarta", description: "Video profil sekolah yang menampilkan fasilitas dan keunggulan", videoType: "youtube", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", category: "Profil Sekolah", thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg" },
+  { title: "Kegiatan Pembelajaran Virtual", description: "Dokumentasi pembelajaran daring selama pandemi", videoType: "youtube", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", category: "Akademik", thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg" },
+  { title: "Pentas Seni Tahunan 2024", description: "Penampilan siswa dalam acara pentas seni tahunan", videoType: "youtube", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", category: "Ekstrakurikuler", thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg" },
+];
 
 const BASE_DEFAULT_NEWS = [
   {
@@ -328,6 +370,9 @@ export const db = {
       id: fileData.id || Date.now(),
       name: fileData.name || fileData.filename || 'Galeri Sekolah',
       filename,
+      seoTitle: fileData.seoTitle || fileData.name || 'Dokumentasi Sekolah',
+      altText: fileData.altText || `${fileData.name || 'Foto'} SMP Muhammadiyah 35 Jakarta`,
+      description: fileData.description || '',
       uploadedAt,
       order: typeof fileData.order === 'number' ? fileData.order : current.length,
     };
@@ -420,6 +465,98 @@ export const db = {
     db.logActivity(userId, 'REORDER_STAFF', 'Updated staff order');
     return normalized;
   },
+
+  importDefaultStaff: (userId) => {
+    const current = db.getStaffProfiles();
+    if (current.length > 0) return current;
+    const now = new Date().toISOString();
+    const imported = DEFAULT_STAFF.map((staff, idx) => ({
+      ...staff,
+      id: Date.now() + idx,
+      photo: staff.image,
+      createdAt: now,
+      updatedAt: now,
+      order: idx
+    }));
+    db._saveData(STAFF_KEY, imported);
+    db.logActivity(userId, 'IMPORT_STAFF', `Imported ${imported.length} default staff profiles`);
+    return imported;
+  },
+
+  importDefaultGallery: (userId) => {
+    const current = db.getGallery();
+    const now = new Date().toISOString();
+    const imported = DEFAULT_GALLERY.map((photo, idx) => ({
+      ...photo,
+      id: Date.now() + idx,
+      dataUrl: photo.url,
+      originalUrl: photo.url,
+      filename: buildSeoFilename(photo.name, now),
+      uploadedAt: now,
+      order: current.length + idx
+    }));
+    const merged = normalizeOrder([...current, ...imported]);
+    db._saveData(GALLERY_KEY, merged);
+    db.logActivity(userId, 'IMPORT_GALLERY', `Imported ${imported.length} default gallery images`);
+    return merged;
+  },
+
+  // --- VIDEOS ---
+  getVideos: () => normalizeOrder(db._getData(VIDEO_KEY, [])),
+
+  saveVideo: (video, userId) => {
+    const current = db.getVideos();
+    const now = new Date().toISOString();
+    if (video.id) {
+      const idx = current.findIndex((v) => v.id === video.id);
+      if (idx !== -1) {
+        current[idx] = { ...current[idx], ...video, updatedAt: now };
+      }
+    } else {
+      current.push({
+        ...video,
+        id: Date.now(),
+        createdAt: now,
+        updatedAt: now,
+        order: typeof video.order === 'number' ? video.order : current.length,
+      });
+    }
+    const normalized = normalizeOrder(current);
+    db._saveData(VIDEO_KEY, normalized);
+    db.logActivity(userId, 'UPSERT_VIDEO', `Saved video: ${video.title}`);
+    return normalized;
+  },
+
+  deleteVideo: (id, userId) => {
+    const filtered = db.getVideos().filter((v) => v.id !== id);
+    db._saveData(VIDEO_KEY, normalizeOrder(filtered));
+    db.logActivity(userId, 'DELETE_VIDEO', `Deleted video ID: ${id}`);
+  },
+
+  reorderVideos: (orderedVideos = [], userId) => {
+    const normalized = normalizeOrder(orderedVideos.map((v, idx) => ({ ...v, order: idx })));
+    db._saveData(VIDEO_KEY, normalized);
+    db.logActivity(userId, 'REORDER_VIDEOS', 'Updated video order');
+    return normalized;
+  },
+
+  importDefaultVideos: (userId) => {
+    const current = db.getVideos();
+    const now = new Date().toISOString();
+    const imported = DEFAULT_VIDEOS.map((video, idx) => ({
+      ...video,
+      id: Date.now() + idx,
+      createdAt: now,
+      updatedAt: now,
+      order: current.length + idx
+    }));
+    const merged = normalizeOrder([...current, ...imported]);
+    db._saveData(VIDEO_KEY, merged);
+    db.logActivity(userId, 'IMPORT_VIDEOS', `Imported ${imported.length} default videos`);
+    return merged;
+  },
+
+  formatName,
 
   // --- REGISTRANTS ---
   getRegistrants: () => db._getData('registrants', []),

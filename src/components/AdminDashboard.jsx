@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   LayoutDashboard, FileText, Users, Settings, LogOut, Menu, X, 
-  Bell, Image, Layers
+  Bell, Image, Layers, Video
 } from 'lucide-react';
 import { db } from '@/lib/db';
 import AdminLogin from '@/components/AdminLogin';
@@ -15,6 +15,7 @@ import SettingsManager from '@/components/admin/SettingsManager';
 import RegistrantManager from '@/components/admin/RegistrantManager';
 import GalleryManager from '@/components/admin/GalleryManager';
 import StaffManager from '@/components/admin/StaffManager';
+import VideoManager from '@/components/admin/VideoManager';
 
 // Temporary placeholders for incomplete components
 const PagesManager = () => <div className="p-8 text-center text-gray-500">Pages Management Module (Coming Soon)</div>;
@@ -81,6 +82,12 @@ const AdminDashboard = ({ onLogout }) => {
       id: 'staff_manager', 
       label: 'Staff Profile Manager', 
       icon: Users, 
+      roles: ['Superadmin'] 
+    },
+    { 
+      id: 'video_manager', 
+      label: 'Video Gallery Manager', 
+      icon: Video, 
       roles: ['Superadmin'] 
     },
     { 
@@ -179,6 +186,7 @@ const AdminDashboard = ({ onLogout }) => {
           {activeTab === 'news_student' && <NewsManager user={user} channel="student" />}
           {activeTab === 'registrants' && <RegistrantManager user={user} />}
           {activeTab === 'staff_manager' && <StaffManager user={user} />}
+          {activeTab === 'video_manager' && <VideoManager user={user} />}
           {activeTab === 'settings' && <SettingsManager user={user} />}
           {activeTab === 'media' && <GalleryManager user={user} />}
           {activeTab === 'pages' && <PagesManager user={user} />}
