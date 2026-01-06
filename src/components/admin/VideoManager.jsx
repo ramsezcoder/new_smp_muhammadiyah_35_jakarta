@@ -3,7 +3,9 @@ import { motion } from 'framer-motion';
 import { Plus, Trash2, Pencil, GripVertical, Youtube, Video as VideoIcon, ExternalLink } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { db } from '@/lib/db';
-import { apiCall, extractYouTubeId, getYouTubeThumbnail } from '@/lib/api-utils';
+import { extractYouTubeId, getYouTubeThumbnail } from '@/lib/api-utils';
+import { videosStorage } from '@/lib/staticStorage';
+import { STATIC_MODE, MESSAGES } from '@/config/staticMode';
 
 const VideoManager = ({ user }) => {
   const { toast } = useToast();
@@ -15,14 +17,10 @@ const VideoManager = ({ user }) => {
   const isSuperadmin = user?.role === 'Superadmin';
 
   useEffect(() => {
-    const load = async () => {
+    const load = () => {
       try {
-        const result = await apiCall('/api/videos');
-        if (result.success) {
-          setVideos(result.data.items || []);
-        } else {
-          throw new Error(result.error || 'Gagal memuat video');
-        }
+        const videos = videosStorage.getAll();
+        setVideos(videos || []);
       } catch (e) {
         console.error('[VideoManager] Load failed:', e);
         toast({ variant: 'destructive', title: 'Gagal memuat video', description: e.message });
@@ -36,7 +34,7 @@ const VideoManager = ({ user }) => {
     setForm({ id: null, title: '', description: '', videoType: 'youtube', url: '', thumbnail: '', category: '' });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     
     if (!form.title.trim() || !form.url.trim()) {
@@ -62,40 +60,29 @@ const VideoManager = ({ user }) => {
     }
 
     try {
-      const result = await apiCall('/api/videos/add', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'x-admin-token': 'SuperAdmin@2025' 
-        },
-        body: JSON.stringify({
-          title: form.title.trim(),
-          description: form.description.trim(),
-          videoType: form.videoType,
-          url: finalUrl,
-          thumbnail: finalThumbnail,
-          category: form.category.trim() || 'Umum',
-        })
-      });
+      const videoData = {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        videoType: form.videoType,
+        url: finalUrl,
+        thumbnail: finalThumbnail,
+        category: form.category.trim() || 'Umum'
+      };
       
-      if (!result.success) {
-        throw new Error(result.error || 'Gagal menyimpan');
-      }
+      videosStorage.add(videoData);
       
-      // Reload video list
-      const reload = await apiCall('/api/videos');
-      if (reload.success) {
-        setVideos(reload.data.items || []);
-      }
+      // Reload from storage
+      const updatedVideos = videosStorage.getAll();
+      setVideos(updatedVideos);
       
-      toast({ title: 'Video ditambahkan', description: 'Data video berhasil disimpan' });
+      toast({ title: 'Video ditambahkan', description: MESSAGES.OPERATION_SUCCESS });
       resetForm();
     } catch (err) {
       console.error('[VideoManager] Submit failed:', err);
       toast({ 
         variant: 'destructive', 
         title: 'Gagal menyimpan', 
-        description: err.message || 'Terjadi kesalahan saat menyimpan video' 
+        description: MESSAGES.OPERATION_FAILED 
       });
     }
   };
@@ -112,68 +99,69 @@ const VideoManager = ({ user }) => {
     });
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
     const confirmed = window.confirm('Apakah Anda yakin ingin menghapus video ini?');
     if (!confirmed) return;
-    await fetch(`/api/videos/${id}`, { method: 'DELETE', headers: { 'x-admin-token': 'SuperAdmin@2025' } });
-    const r = await fetch('/api/videos');
-    const j = await r.json();
-    setVideos(j.items || []);
+    
+    videosStorage.delete(id);
+    const updatedVideos = videosStorage.getAll();
+    setVideos(updatedVideos);
+    
     toast({ title: 'Video dihapus', description: 'Data sudah dihapus' });
     if (form.id === id) resetForm();
   };
 
   const handleDragStart = (idx) => { dragIndex.current = idx; };
   const handleDragEnter = (idx) => { dragOver.current = idx; };
-  const handleDragEnd = async () => {
+  const handleDragEnd = () => {
     const from = dragIndex.current;
     const to = dragOver.current;
     dragIndex.current = null;
     dragOver.current = null;
     if (from === null || to === null || from === to) return;
+    
     const reordered = [...videos];
     const [moved] = reordered.splice(from, 1);
     reordered.splice(to, 0, moved);
     setVideos(reordered);
+    
     const order = reordered.map(v => v.id);
-    await fetch('/api/videos/reorder', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': 'SuperAdmin@2025' }, body: JSON.stringify({ order }) });
+    videosStorage.reorder(order);
+    
     toast({ title: 'Urutan disimpan', description: 'Urutan video diperbarui' });
   };
 
-  const handleImportDefaults = async () => {
+  const handleImportDefaults = () => {
     const confirmed = window.confirm('Import video default? Akan ditambahkan ke daftar yang ada.');
     if (!confirmed) return;
+    
     try {
-      const result = await apiCall('/api/videos/import-default', { 
-        method: 'POST',
-        headers: { 'x-admin-token': 'SuperAdmin@2025' }
-      });
-      
-      if (!result.success) {
-        if (result.isNetworkError) {
-          throw new Error('Server tidak dapat dijangkau. Pastikan backend sedang berjalan.');
-        }
-        throw new Error(result.error || 'Import gagal');
+      const existing = videosStorage.getAll();
+      if (existing.length > 0) {
+        toast({ title: 'Import dilewati', description: 'Data default sudah pernah diimport' });
+        return;
       }
       
-      const reload = await apiCall('/api/videos');
-      if (reload.success) {
-        setVideos(reload.data.items || []);
-      }
+      const defaultVideo = {
+        title: 'Profil Sekolah',
+        description: 'Video profil SMP Muhammadiyah 35 Jakarta',
+        videoType: 'youtube',
+        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        thumbnail: getYouTubeThumbnail('dQw4w9WgXcQ'),
+        category: 'Profil'
+      };
       
-      const skipped = result.data?.skipped;
-      const added = result.data?.added || 0;
+      videosStorage.add(defaultVideo);
+      const updatedVideos = videosStorage.getAll();
+      setVideos(updatedVideos);
       
-      toast({ 
-        title: skipped ? 'Import dilewati' : 'Import berhasil', 
-        description: skipped ? 'Data default sudah pernah diimport' : `Ditambahkan ${added} video` 
-      });
+      toast({ title: 'Import berhasil', description: 'Ditambahkan 1 video' });
     } catch (e) {
       console.error('[VideoManager] Import failed:', e);
       toast({ 
         variant: 'destructive', 
         title: 'Import gagal', 
-        description: e.message || 'File JSON tidak valid atau tidak ditemukan.' 
+        description: MESSAGES.OPERATION_FAILED 
       });
     }
   };

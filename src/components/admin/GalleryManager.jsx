@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Trash2, Image, Loader, Pencil, GripVertical, Eye, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { db } from '@/lib/db';
-import { apiCall } from '@/lib/api-utils';
+import { galleryStorage, simulateUpload } from '@/lib/staticStorage';
+import { STATIC_MODE, MESSAGES } from '@/config/staticMode';
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 4 * 1024 * 1024;
@@ -23,14 +24,10 @@ const GalleryManager = ({ user }) => {
   const isSuperadmin = user?.role === 'Superadmin';
 
   useEffect(() => {
-    const load = async () => {
+    const load = () => {
       try {
-        const result = await apiCall('/api/gallery');
-        if (result.success) {
-          setImages(result.data.items || []);
-        } else {
-          throw new Error(result.error || 'Gagal memuat galeri');
-        }
+        const galleryItems = galleryStorage.getAll();
+        setImages(galleryItems || []);
       } catch (e) {
         console.error('[GalleryManager] Load failed:', e);
         toast({ variant: 'destructive', title: 'Gagal memuat galeri', description: e.message });
@@ -42,40 +39,36 @@ const GalleryManager = ({ user }) => {
     load();
   }, []);
 
-  const handleImportDefaults = async () => {
+  const handleImportDefaults = () => {
     const confirmed = window.confirm('Import foto galeri default? Akan ditambahkan ke galeri yang ada.');
     if (!confirmed) return;
     try {
-      const result = await apiCall('/api/gallery/import-default', { 
-        method: 'POST',
-        headers: { 'x-admin-token': 'SuperAdmin@2025' }
-      });
-      
-      if (!result.success) {
-        if (result.isNetworkError) {
-          throw new Error('Server tidak dapat dijangkau. Pastikan backend sedang berjalan.');
-        }
-        throw new Error(result.error || 'Import gagal');
+      const existing = galleryStorage.getAll();
+      if (existing.length > 0) {
+        toast({ title: 'Import dilewati', description: 'Data default sudah pernah diimport' });
+        return;
       }
       
-      const reload = await apiCall('/api/gallery');
-      if (reload.success) {
-        setImages(reload.data.items || []);
-      }
+      const defaultImage = {
+        filename: 'default-gallery.jpg',
+        name: 'Foto Default',
+        url: '/placeholder-gallery.jpg',
+        altText: 'Foto Default SMP Muhammadiyah 35 Jakarta',
+        seoTitle: 'Foto Default',
+        description: 'Foto galeri default'
+      };
       
-      const added = result.data?.added || 0;
-      const skipped = result.data?.skipped;
+      galleryStorage.add(defaultImage);
+      const updatedImages = galleryStorage.getAll();
+      setImages(updatedImages);
       
-      toast({ 
-        title: skipped ? 'Import dilewati' : 'Import berhasil', 
-        description: skipped ? 'Data default sudah pernah diimport' : `Ditambahkan: ${added} foto` 
-      });
+      toast({ title: 'Import berhasil', description: 'Ditambahkan: 1 foto' });
     } catch (e) {
       console.error('[GalleryManager] Import failed:', e);
       toast({ 
         variant: 'destructive', 
         title: 'Import gagal', 
-        description: e.message || 'File JSON tidak valid atau tidak ditemukan.' 
+        description: MESSAGES.OPERATION_FAILED 
       });
     }
   };
@@ -105,81 +98,90 @@ const GalleryManager = ({ user }) => {
         }
 
         const baseName = file.name.replace(/\.[^.]+$/, '');
-        const form = new FormData();
-        form.append('file', file);
-        form.append('name', baseName);
-        form.append('altText', baseName);
-        form.append('seoTitle', baseName);
-        form.append('description', '');
-        const res = await fetch('/api/upload/gallery', {
-          method: 'POST',
-          headers: { 'x-admin-token': 'SuperAdmin@2025' },
-          body: form
-        });
-        const json = await res.json();
-        if (json?.success) added += 1;
+        
+        const uploadResult = await simulateUpload(file, 'gallery');
+        if (!uploadResult.success) {
+          console.error('Upload simulation failed for:', file.name);
+          continue;
+        }
+        
+        const imageData = {
+          filename: uploadResult.filename,
+          name: baseName,
+          url: uploadResult.url,
+          altText: baseName,
+          seoTitle: baseName,
+          description: ''
+        };
+        
+        galleryStorage.add(imageData);
+        added += 1;
       }
 
-      const r = await fetch('/api/gallery');
-      const j = await r.json();
-      setImages(j.items || []);
+      const updatedImages = galleryStorage.getAll();
+      setImages(updatedImages);
+      
       if (added) toast({ title: 'Upload berhasil', description: `${added} gambar disimpan` });
     } catch (err) {
-      toast({ variant: 'destructive', title: 'Upload gagal', description: err.message || 'Terjadi kesalahan' });
+      console.error('[GalleryManager] Upload failed:', err);
+      toast({ variant: 'destructive', title: 'Upload gagal', description: MESSAGES.OPERATION_FAILED });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleDeleteImage = async (imageId) => {
+  const handleDeleteImage = (imageId) => {
     const target = images.find((img) => img.id === imageId);
     if (!target) return;
     const confirmed = window.confirm('Apakah Anda yakin ingin menghapus foto ini?');
     if (!confirmed) return;
-    await fetch(`/api/gallery/${imageId}`, { method: 'DELETE', headers: { 'x-admin-token': 'SuperAdmin@2025' } });
-    const r = await fetch('/api/gallery');
-    const j = await r.json();
-    setImages(j.items || []);
+    
+    galleryStorage.delete(imageId);
+    const updatedImages = galleryStorage.getAll();
+    setImages(updatedImages);
+    
     if (modalImage?.id === imageId) setModalImage(null);
     toast({ title: 'Foto dihapus', description: 'Gambar sudah dihapus dari galeri' });
   };
 
-  const handleRename = async () => {
+  const handleRename = () => {
     if (!modalImage || !renameValue.trim()) return;
+    
     const payload = {
       name: renameValue.trim(),
       altText: seoFields.altText.trim() || `${renameValue.trim()} SMP Muhammadiyah 35 Jakarta`,
       seoTitle: seoFields.seoTitle.trim() || renameValue.trim(),
       description: seoFields.description.trim()
     };
-    const res = await fetch(`/api/gallery/${modalImage.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'x-admin-token': 'SuperAdmin@2025' },
-      body: JSON.stringify(payload)
-    });
-    const json = await res.json();
-    const r = await fetch('/api/gallery');
-    const j = await r.json();
-    setImages(j.items || []);
-    setModalImage(json.item);
+    
+    galleryStorage.update(modalImage.id, payload);
+    const updatedImages = galleryStorage.getAll();
+    setImages(updatedImages);
+    
+    const updatedModal = updatedImages.find(img => img.id === modalImage.id);
+    setModalImage(updatedModal || null);
+    
     toast({ title: 'Data diperbarui', description: 'Nama dan SEO fields telah disimpan' });
   };
 
   const handleDragStart = (idx) => { dragIndex.current = idx; };
   const handleDragEnter = (idx) => { dragOver.current = idx; };
-  const handleDragEnd = async () => {
+  const handleDragEnd = () => {
     const from = dragIndex.current;
     const to = dragOver.current;
     dragIndex.current = null;
     dragOver.current = null;
     if (from === null || to === null || from === to) return;
+    
     const reordered = [...images];
     const [moved] = reordered.splice(from, 1);
     reordered.splice(to, 0, moved);
     setImages(reordered);
+    
     const order = reordered.map(i => i.id);
-    await fetch('/api/gallery/reorder', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': 'SuperAdmin@2025' }, body: JSON.stringify({ order }) });
+    galleryStorage.reorder(order);
+    
     toast({ title: 'Urutan disimpan', description: 'Urutan galeri diperbarui' });
   };
 

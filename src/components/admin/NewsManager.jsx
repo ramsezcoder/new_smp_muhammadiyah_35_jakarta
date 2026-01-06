@@ -10,6 +10,8 @@ import RichTextEditor from './RichTextEditor';
 import { SITE_INFO } from '@/lib/seo-utils';
 import { generateArticleSEO, generateSlug, calculateCTRScore } from '@/lib/seo-engine';
 import { validateImageFile } from '@/lib/api-utils';
+import { simulateUpload } from '@/lib/staticStorage';
+import { STATIC_MODE, MESSAGES } from '@/config/staticMode';
 
 const NewsManager = ({ user, channel }) => {
   const { toast } = useToast();
@@ -310,44 +312,26 @@ const NewsManager = ({ user, channel }) => {
 
     setUploadingImage(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('customName', formData.featuredImageName || file.name.replace(/\.[^.]+$/, ''));
-      fd.append('alt', formData.featuredImageAlt || formData.title || 'Gambar Artikel');
-      fd.append('title', formData.featuredImageTitle || formData.title || 'Gambar Artikel');
-      
-      const res = await fetch('/api/upload/featured', { 
-        method: 'POST', 
-        headers: { 'x-admin-token': 'SuperAdmin@2025' }, 
-        body: fd 
-      });
-      
-      // Check if response is HTML instead of JSON
-      const contentType = res.headers.get('content-type');
-      if (contentType && !contentType.includes('application/json')) {
-        throw new Error('Server returned invalid response. Check if backend is running.');
-      }
-      
-      const json = await res.json();
-      
-      if (!json?.success) {
-        throw new Error(json?.error || 'Upload gagal');
+      // Simulate upload and get base64 data URL
+      const uploadResult = await simulateUpload(file, 'featured');
+      if (!uploadResult.success) {
+        throw new Error('Gagal memproses gambar');
       }
       
       setFormData(prev => ({ 
         ...prev, 
-        featuredImage: json.file, 
-        featuredImageAlt: json.alt, 
-        featuredImageTitle: json.title 
+        featuredImage: uploadResult.url,
+        featuredImageAlt: formData.featuredImageAlt || formData.title || 'Gambar Artikel',
+        featuredImageTitle: formData.featuredImageTitle || formData.title || 'Gambar Artikel'
       }));
       
-      toast({ title: 'Gambar diupload', description: 'Featured image berhasil disimpan' });
+      toast({ title: 'Gambar diupload', description: MESSAGES.OPERATION_SUCCESS });
     } catch (err) {
       console.error('[NewsManager] Featured image upload failed:', err);
       toast({ 
         variant: 'destructive', 
         title: 'Upload gagal', 
-        description: err.message || 'Terjadi kesalahan saat upload. Coba lagi.' 
+        description: MESSAGES.OPERATION_FAILED
       });
     } finally {
       setUploadingImage(false);
