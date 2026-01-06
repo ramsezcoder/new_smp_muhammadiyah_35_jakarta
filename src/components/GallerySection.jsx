@@ -22,22 +22,15 @@ const GallerySection = () => {
             altText: img.altText || `${img.name || 'Foto'} SMP Muhammadiyah 35 Jakarta`,
             seoTitle: img.seoTitle || img.name || 'Dokumentasi'
           })));
-          return;
+        } else {
+          setGalleryImages([]);
         }
       } catch (e) {
-        console.warn('[gallery] load failed', e.message);
+        console.warn('[GallerySection] API load failed:', e.message);
+        setGalleryImages([]);
       }
     };
     load();
-
-    setGalleryImages([
-      { id: 1, caption: 'Kegiatan Pembelajaran', description: 'Suasana belajar yang kondusif di kelas', src: 'https://images.unsplash.com/photo-1509062522246-3755977927d7', altText: 'Kegiatan pembelajaran di kelas SMP Muhammadiyah 35 Jakarta', seoTitle: 'Kegiatan Pembelajaran' },
-      { id: 2, caption: 'Laboratorium Komputer', description: 'Fasilitas komputer modern untuk siswa', src: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3', altText: 'Laboratorium komputer SMP Muhammadiyah 35 Jakarta', seoTitle: 'Laboratorium Komputer' },
-      { id: 3, caption: 'Perpustakaan Sekolah', description: 'Koleksi buku lengkap untuk literasi', src: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570', altText: 'Perpustakaan SMP Muhammadiyah 35 Jakarta', seoTitle: 'Perpustakaan' },
-      { id: 4, caption: 'Kegiatan Tahfidz', description: 'Pembiasaan menghafal Al-Quran', src: 'https://images.unsplash.com/photo-1584286595398-a59f21d313f5', altText: 'Kegiatan tahfidz Al-Quran', seoTitle: 'Tahfidz' },
-      { id: 5, caption: 'Lapangan Olahraga', description: 'Area olahraga yang luas dan representatif', src: 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e', altText: 'Lapangan olahraga sekolah', seoTitle: 'Lapangan Olahraga' },
-      { id: 6, caption: 'Ekstrakurikuler', description: 'Pengembangan minat dan bakat siswa', src: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18', altText: 'Kegiatan ekstrakurikuler siswa', seoTitle: 'Ekstrakurikuler' },
-    ]);
   }, []);
 
   return (
@@ -59,9 +52,15 @@ const GallerySection = () => {
           </h2>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {galleryImages.map((image, index) => (
-            <motion.div
+        {galleryImages.length === 0 ? (
+          <div className="text-center py-12 text-gray-500 border border-dashed border-gray-200 rounded-2xl bg-white">
+            <p className="text-lg">Belum ada foto galeri yang ditambahkan.</p>
+            <p className="text-sm mt-2">Admin dapat mengelola galeri dari dashboard.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            {galleryImages.map((image, index) => (
+              <motion.div
               key={image.id}
               initial={{ opacity: 0, scale: 0.9 }}
               whileInView={{ opacity: 1, scale: 1 }}
@@ -90,7 +89,8 @@ const GallerySection = () => {
               </div>
             </motion.div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
 
       <AnimatePresence>

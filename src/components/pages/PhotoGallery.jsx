@@ -9,21 +9,6 @@ const PhotoGallery = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [photos, setPhotos] = useState([]);
 
-  const defaultPhotos = [
-    { id: 1, title: "Upacara Bendera", category: "Kegiatan Rutin", image: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop" },
-    { id: 2, title: "Kegiatan Pembelajaran", category: "Akademik", image: "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&h=600&fit=crop" },
-    { id: 3, title: "Lomba Sains", category: "Prestasi", image: "https://images.unsplash.com/photo-1532153955177-f59af40d6472?w=800&h=600&fit=crop" },
-    { id: 4, title: "Kegiatan Olahraga", category: "Ekstrakurikuler", image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&h=600&fit=crop" },
-    { id: 5, title: "Pesantren Kilat", category: "Keagamaan", image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&h=600&fit=crop" },
-    { id: 6, title: "Praktikum Laboratorium", category: "Akademik", image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=800&h=600&fit=crop" },
-    { id: 7, title: "Pentas Seni", category: "Ekstrakurikuler", image: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&h=600&fit=crop" },
-    { id: 8, title: "Wisuda Angkatan", category: "Kegiatan Rutin", image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&h=600&fit=crop" },
-    { id: 9, title: "Kegiatan Pramuka", category: "Ekstrakurikuler", image: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=800&h=600&fit=crop" },
-    { id: 10, title: "Kunjungan Museum", category: "Study Tour", image: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&h=600&fit=crop" },
-    { id: 11, title: "Kompetisi Robotik", category: "Prestasi", image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&h=600&fit=crop" },
-    { id: 12, title: "Peringatan Hari Besar", category: "Keagamaan", image: "https://images.unsplash.com/photo-1544531586-fde5298cdd40?w=800&h=600&fit=crop" }
-  ];
-
   useEffect(() => {
     const load = async () => {
       try {
@@ -34,18 +19,18 @@ const PhotoGallery = () => {
           const uploadedPhotos = stored.map((img, idx) => ({
             id: img.id || idx,
             title: db.formatName(img.name || img.filename) || 'Dokumentasi Sekolah',
-            category: img.category || 'Galeri Unggahan',
+            category: img.category || 'Galeri',
             image: img.url,
             altText: img.altText || `${img.name || 'Foto'} SMP Muhammadiyah 35 Jakarta`,
             seoTitle: img.seoTitle || img.name || 'Dokumentasi'
           }));
-          setPhotos([...uploadedPhotos, ...defaultPhotos]);
-          return;
+          setPhotos(uploadedPhotos);
+        } else {
+          setPhotos([]);
         }
-        setPhotos(defaultPhotos);
       } catch (e) {
-        console.warn('[gallery] load failed', e.message);
-        setPhotos(defaultPhotos);
+        console.warn('[PhotoGallery] API load failed:', e.message);
+        setPhotos([]);
       }
     };
     load();
@@ -86,8 +71,14 @@ const PhotoGallery = () => {
         </motion.div>
 
         {/* Photo Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {photos.map((photo, index) => (
+        {photos.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-16 text-center">
+            <p className="text-gray-600 text-lg mb-2">Belum ada foto galeri yang ditambahkan.</p>
+            <p className="text-gray-400 text-sm">Admin dapat mengelola galeri dari dashboard.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {photos.map((photo, index) => (
             <motion.div
               key={photo.id}
               initial={{ opacity: 0, scale: 0.9 }}
@@ -117,7 +108,8 @@ const PhotoGallery = () => {
               </div>
             </motion.div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Lightbox Modal */}

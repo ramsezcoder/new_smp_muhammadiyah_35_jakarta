@@ -1,77 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Play } from 'lucide-react';
 
 const VideoGallery = () => {
-  const videos = [
-    {
-      id: 1,
-      title: "Profil SMP Muhammadiyah 35 Jakarta",
-      category: "Profil Sekolah",
-      embedId: "dQw4w9WgXcQ", // Replace with actual YouTube video ID
-      description: "Video profil sekolah yang menampilkan fasilitas dan keunggulan"
-    },
-    {
-      id: 2,
-      title: "Kegiatan Pembelajaran Virtual",
-      category: "Akademik",
-      embedId: "dQw4w9WgXcQ",
-      description: "Dokumentasi pembelajaran daring selama pandemi"
-    },
-    {
-      id: 3,
-      title: "Pentas Seni Tahunan 2024",
-      category: "Ekstrakurikuler",
-      embedId: "dQw4w9WgXcQ",
-      description: "Penampilan siswa dalam acara pentas seni tahunan"
-    },
-    {
-      id: 4,
-      title: "Lomba Cerdas Cermat",
-      category: "Prestasi",
-      embedId: "dQw4w9WgXcQ",
-      description: "Kompetisi akademik tingkat kota"
-    },
-    {
-      id: 5,
-      title: "Kegiatan Pesantren Kilat",
-      category: "Keagamaan",
-      embedId: "dQw4w9WgXcQ",
-      description: "Kegiatan keagamaan selama bulan Ramadhan"
-    },
-    {
-      id: 6,
-      title: "Study Tour Bandung",
-      category: "Study Tour",
-      embedId: "dQw4w9WgXcQ",
-      description: "Kunjungan edukatif ke berbagai tempat bersejarah"
-    },
-    {
-      id: 7,
-      title: "Turnamen Futsal Antar Kelas",
-      category: "Olahraga",
-      embedId: "dQw4w9WgXcQ",
-      description: "Kompetisi olahraga internal sekolah"
-    },
-    {
-      id: 8,
-      title: "Wisuda Angkatan 2024",
-      category: "Kelulusan",
-      embedId: "dQw4w9WgXcQ",
-      description: "Pelepasan siswa kelas 9 angkatan 2024"
-    },
-    {
-      id: 9,
-      title: "Praktikum Sains",
-      category: "Akademik",
-      embedId: "dQw4w9WgXcQ",
-      description: "Kegiatan praktikum di laboratorium IPA"
-    }
-  ];
-
+  const [videos, setVideos] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/videos');
+        const json = await res.json();
+        const stored = json.items || [];
+        if (stored.length) {
+          setVideos(stored.map((v, idx) => ({
+            id: v.id || idx,
+            title: v.title || 'Video Sekolah',
+            category: v.category || 'Umum',
+            embedId: v.url ? (v.url.split('embed/')[1] || v.url.split('v=')[1] || '').split('&')[0] : '',
+            description: v.description || '',
+            thumbnail: v.thumbnail || ''
+          })));
+        } else {
+          setVideos([]);
+        }
+      } catch (e) {
+        console.warn('[VideoGallery] API load failed:', e.message);
+        setVideos([]);
+      }
+    };
+    load();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E8F4F8] to-white pt-24 pb-20">
@@ -106,8 +67,14 @@ const VideoGallery = () => {
         </motion.div>
 
         {/* Video Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {videos.map((video, index) => (
+        {videos.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-16 text-center mb-16">
+            <p className="text-gray-600 text-lg mb-2">Belum ada video galeri yang ditambahkan.</p>
+            <p className="text-gray-400 text-sm">Admin dapat mengelola video dari dashboard.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {videos.map((video, index) => (
             <motion.div
               key={video.id}
               initial={{ opacity: 0, y: 30 }}
@@ -147,7 +114,8 @@ const VideoGallery = () => {
               </div>
             </motion.div>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Call to Action */}
         <motion.div
