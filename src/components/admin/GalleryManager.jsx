@@ -22,16 +22,33 @@ const GalleryManager = ({ user }) => {
   const isSuperadmin = user?.role === 'Superadmin';
 
   useEffect(() => {
-    setImages(db.getGallery());
-    setLoading(false);
+    const load = async () => {
+      try {
+        const res = await fetch('/api/gallery');
+        const json = await res.json();
+        setImages(json.items || []);
+      } catch (e) {
+        toast({ variant: 'destructive', title: 'Gagal memuat galeri', description: e.message });
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
-  const handleImportDefaults = () => {
+  const handleImportDefaults = async () => {
     const confirmed = window.confirm('Import foto galeri default? Akan ditambahkan ke galeri yang ada.');
     if (!confirmed) return;
-    const merged = db.importDefaultGallery(user?.id);
-    setImages(merged);
-    toast({ title: 'Import berhasil', description: `Foto default ditambahkan ke galeri` });
+    try {
+      const res = await fetch('/api/gallery/import-default', { method: 'POST' });
+      const json = await res.json();
+      const r = await fetch('/api/gallery');
+      const j = await r.json();
+      setImages(j.items || []);
+      toast({ title: 'Import berhasil', description: `Ditambahkan: ${json.added || 0} foto` });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Import gagal', description: e.message });
+    }
   };
 
   const toDataUrl = (file) => new Promise((resolve, reject) => {
@@ -47,7 +64,7 @@ const GalleryManager = ({ user }) => {
     setUploading(true);
 
     try {
-      const additions = [];
+      let added = 0;
       for (const file of files) {
         if (!ACCEPTED_TYPES.includes(file.type)) {
           toast({ variant: 'destructive', title: 'Format tidak didukung', description: 'Gunakan JPG, PNG, atau WebP' });
@@ -59,23 +76,25 @@ const GalleryManager = ({ user }) => {
         }
 
         const baseName = file.name.replace(/\.[^.]+$/, '');
-        const dataUrl = await toDataUrl(file);
-
-        const saved = db.saveGalleryItem({
-          name: baseName,
-          filename: file.name,
-          dataUrl,
-          originalUrl: dataUrl,
-          url: dataUrl,
-          size: file.size,
-        }, user?.id);
-        additions.push(saved);
+        const form = new FormData();
+        form.append('file', file);
+        form.append('name', baseName);
+        form.append('altText', baseName);
+        form.append('seoTitle', baseName);
+        form.append('description', '');
+        const res = await fetch('/api/upload/gallery', {
+          method: 'POST',
+          headers: { 'x-admin-token': 'SuperAdmin@2025' },
+          body: form
+        });
+        const json = await res.json();
+        if (json?.success) added += 1;
       }
 
-      if (additions.length) {
-        setImages(db.getGallery());
-        toast({ title: 'Upload berhasil', description: `${additions.length} gambar disimpan` });
-      }
+      const r = await fetch('/api/gallery');
+      const j = await r.json();
+      setImages(j.items || []);
+      if (added) toast({ title: 'Upload berhasil', description: `${added} gambar disimpan` });
     } catch (err) {
       toast({ variant: 'destructive', title: 'Upload gagal', description: err.message || 'Terjadi kesalahan' });
     } finally {
@@ -84,45 +103,43 @@ const GalleryManager = ({ user }) => {
     }
   };
 
-  const handleDeleteImage = (imageId) => {
+  const handleDeleteImage = async (imageId) => {
     const target = images.find((img) => img.id === imageId);
     if (!target) return;
     const confirmed = window.confirm('Apakah Anda yakin ingin menghapus foto ini?');
     if (!confirmed) return;
-    db.deleteGalleryItem(imageId, user?.id);
-    setImages(db.getGallery());
+    await fetch(`/api/gallery/${imageId}`, { method: 'DELETE', headers: { 'x-admin-token': 'SuperAdmin@2025' } });
+    const r = await fetch('/api/gallery');
+    const j = await r.json();
+    setImages(j.items || []);
     if (modalImage?.id === imageId) setModalImage(null);
     toast({ title: 'Foto dihapus', description: 'Gambar sudah dihapus dari galeri' });
   };
 
-  const handleRename = () => {
+  const handleRename = async () => {
     if (!modalImage || !renameValue.trim()) return;
-    const updatedItem = {
-      ...modalImage,
+    const payload = {
       name: renameValue.trim(),
       altText: seoFields.altText.trim() || `${renameValue.trim()} SMP Muhammadiyah 35 Jakarta`,
       seoTitle: seoFields.seoTitle.trim() || renameValue.trim(),
       description: seoFields.description.trim()
     };
-    const updated = db.renameGalleryItem(modalImage.id, renameValue.trim(), user?.id);
-    if (!updated) return;
-    
-    // Update with SEO fields
-    const allItems = db.getGallery();
-    const idx = allItems.findIndex(i => i.id === modalImage.id);
-    if (idx !== -1) {
-      allItems[idx] = { ...allItems[idx], ...updatedItem };
-      db._saveData('gallery_uploads', allItems);
-    }
-    
-    setImages(db.getGallery());
-    setModalImage({...updated, ...updatedItem});
+    const res = await fetch(`/api/gallery/${modalImage.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': 'SuperAdmin@2025' },
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+    const r = await fetch('/api/gallery');
+    const j = await r.json();
+    setImages(j.items || []);
+    setModalImage(json.item);
     toast({ title: 'Data diperbarui', description: 'Nama dan SEO fields telah disimpan' });
   };
 
   const handleDragStart = (idx) => { dragIndex.current = idx; };
   const handleDragEnter = (idx) => { dragOver.current = idx; };
-  const handleDragEnd = () => {
+  const handleDragEnd = async () => {
     const from = dragIndex.current;
     const to = dragOver.current;
     dragIndex.current = null;
@@ -131,8 +148,9 @@ const GalleryManager = ({ user }) => {
     const reordered = [...images];
     const [moved] = reordered.splice(from, 1);
     reordered.splice(to, 0, moved);
-    const normalized = db.reorderGallery(reordered, user?.id);
-    setImages(normalized);
+    setImages(reordered);
+    const order = reordered.map(i => i.id);
+    await fetch('/api/gallery/reorder', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': 'SuperAdmin@2025' }, body: JSON.stringify({ order }) });
     toast({ title: 'Urutan disimpan', description: 'Urutan galeri diperbarui' });
   };
 
@@ -309,7 +327,7 @@ const GalleryManager = ({ user }) => {
             >
               <div className="relative">
                 <img
-                  src={modalImage.dataUrl || modalImage.originalUrl || modalImage.url}
+                  src={modalImage.url}
                   alt={modalImage.name}
                   className="w-full max-h-[55vh] object-contain bg-gray-50"
                 />

@@ -8,18 +8,27 @@ const GallerySection = () => {
   const [galleryImages, setGalleryImages] = useState([]);
 
   useEffect(() => {
-    const stored = db.getGallery();
-    if (stored.length) {
-      setGalleryImages(stored.slice(0, 6).map((img, idx) => ({
-        id: img.id || idx,
-        caption: db.formatName(img.name || img.filename) || 'Galeri Sekolah',
-        description: img.description || 'Dokumentasi kegiatan sekolah',
-        src: img.dataUrl || img.originalUrl || img.url,
-        altText: img.altText || `${img.name || 'Foto'} SMP Muhammadiyah 35 Jakarta`,
-        seoTitle: img.seoTitle || img.name || 'Dokumentasi'
-      })));
-      return;
-    }
+    const load = async () => {
+      try {
+        const res = await fetch('/api/gallery');
+        const json = await res.json();
+        const stored = json.items || [];
+        if (stored.length) {
+          setGalleryImages(stored.slice(0, 6).map((img, idx) => ({
+            id: img.id || idx,
+            caption: db.formatName(img.name || img.filename) || 'Galeri Sekolah',
+            description: img.description || 'Dokumentasi kegiatan sekolah',
+            src: img.url,
+            altText: img.altText || `${img.name || 'Foto'} SMP Muhammadiyah 35 Jakarta`,
+            seoTitle: img.seoTitle || img.name || 'Dokumentasi'
+          })));
+          return;
+        }
+      } catch (e) {
+        console.warn('[gallery] load failed', e.message);
+      }
+    };
+    load();
 
     setGalleryImages([
       { id: 1, caption: 'Kegiatan Pembelajaran', description: 'Suasana belajar yang kondusif di kelas', src: 'https://images.unsplash.com/photo-1509062522246-3755977927d7', altText: 'Kegiatan pembelajaran di kelas SMP Muhammadiyah 35 Jakarta', seoTitle: 'Kegiatan Pembelajaran' },

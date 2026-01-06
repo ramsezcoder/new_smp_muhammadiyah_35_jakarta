@@ -26,23 +26,32 @@ const StaffPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const stored = db.getStaffProfiles().filter((staff) => staff.active !== false);
-    if (stored.length) {
-      setStaffMembers(stored.map((item, idx) => ({
-        id: item.id || idx,
-        name: item.name,
-        role: item.position || item.role || 'Staf Sekolah',
-        image: item.photo || item.image || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop',
-        altText: `${item.name} - ${item.position || item.role || 'Staf'} SMP Muhammadiyah 35 Jakarta`
-      })));
-      setUsingFallback(false);
-    } else {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/staff');
+        const json = await res.json();
+        const stored = (json.items || []).filter((s) => s.active !== false);
+        if (stored.length) {
+          setStaffMembers(stored.map((item, idx) => ({
+            id: item.id || idx,
+            name: item.name,
+            role: item.position || item.role || 'Staf Sekolah',
+            image: item.photoUrl || item.photo || item.image || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop',
+            altText: `${item.name} - ${item.position || item.role || 'Staf'} SMP Muhammadiyah 35 Jakarta`
+          })));
+          setUsingFallback(false);
+          return;
+        }
+      } catch (e) {
+        console.warn('[staff] load failed', e.message);
+      }
       setStaffMembers(defaultStaff.map(s => ({
         ...s,
         altText: `${s.name} - ${s.role} SMP Muhammadiyah 35 Jakarta`
       })));
       setUsingFallback(true);
-    }
+    };
+    load();
   }, []);
 
   return (

@@ -46,7 +46,23 @@ const DashboardHome = ({ user }) => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div>
         <h2 className="text-2xl font-bold text-gray-800">Welcome back, {user.name} 👋</h2>
-        <p className="text-gray-500">Here's the overview of your school's digital platform.</p>
+        <div className="mt-2 space-y-3 text-gray-600 text-sm leading-relaxed">
+          <p>
+            This website and dashboard were developed by M. Mabrur Riyamasey Mas'ud, S.Kom., S.H., a professional with dual academic concentrations in Information Technology and Law.
+          </p>
+          <div>
+            <p className="font-semibold text-gray-700">This project is built using a modern, scalable, and SEO-friendly web architecture, including:</p>
+            <ul className="mt-2 list-disc list-inside space-y-1">
+              <li>React + Vite for a fast and optimized frontend</li>
+              <li>Tailwind CSS for responsive and elegant UI styling</li>
+              <li>React Router for clean navigation and page routing</li>
+              <li>JSON/static data & API-ready structure for flexible data handling</li>
+              <li>Admin CMS Dashboard for managing content dynamically</li>
+              <li>Image optimization & SEO metadata support</li>
+            </ul>
+          </div>
+          <p className="text-gray-500">Designed to be lightweight, mobile-first, secure, and future-ready.</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

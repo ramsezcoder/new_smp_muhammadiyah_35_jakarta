@@ -11,6 +11,7 @@ const StaffManager = ({ user }) => {
   const { toast } = useToast();
   const [staff, setStaff] = useState([]);
   const [form, setForm] = useState({ id: null, name: '', position: '', photo: '', active: true });
+  const [photoFile, setPhotoFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
   const dragIndex = useRef(null);
@@ -19,15 +20,30 @@ const StaffManager = ({ user }) => {
   const isSuperadmin = user?.role === 'Superadmin';
 
   useEffect(() => {
-    setStaff(db.getStaffProfiles());
+    const load = async () => {
+      try {
+        const res = await fetch('/api/staff');
+        const json = await res.json();
+        setStaff(json.items || []);
+      } catch (e) {
+        toast({ variant: 'destructive', title: 'Gagal memuat staff', description: e.message });
+      }
+    };
+    load();
   }, []);
 
-  const handleImportDefaults = () => {
-    const confirmed = window.confirm('Import data staff default? (Hanya jika kosong)');
-    if (!confirmed) return;
-    const imported = db.importDefaultStaff(user?.id);
-    setStaff(imported);
-    toast({ title: 'Import berhasil', description: `${imported.length} staff diimport` });
+  const handleImportDefaults = async () => {
+    try {
+      const res = await fetch('/api/staff/import-default', { method: 'POST', headers: { 'x-admin-token': 'SuperAdmin@2025' } });
+      const json = await res.json();
+      if (!json?.success) throw new Error(json?.error || 'Gagal import');
+      const r = await fetch('/api/staff');
+      const j = await r.json();
+      setStaff(j.items || []);
+      toast({ title: json.skipped ? 'Import dilewati' : 'Import berhasil', description: json.skipped ? 'Data default sudah ada' : `Ditambahkan ${json.added} profil` });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Gagal import', description: err.message });
+    }
   };
 
   const toDataUrl = (file) => new Promise((resolve, reject) => {
@@ -51,6 +67,7 @@ const StaffManager = ({ user }) => {
     setUploading(true);
     try {
       const dataUrl = await toDataUrl(file);
+      setPhotoFile(file);
       setForm((prev) => ({ ...prev, photo: dataUrl }));
     } catch (err) {
       toast({ variant: 'destructive', title: 'Gagal memuat foto', description: err.message || 'Coba lagi' });
@@ -61,27 +78,36 @@ const StaffManager = ({ user }) => {
 
   const resetForm = () => {
     setForm({ id: null, name: '', position: '', photo: '', active: true });
+    setPhotoFile(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || !form.position.trim()) {
       toast({ variant: 'destructive', title: 'Lengkapi data', description: 'Nama dan jabatan wajib diisi' });
       return;
     }
-
-    db.saveStaffProfile({
-      id: form.id,
-      name: form.name.trim(),
-      position: form.position.trim(),
-      photo: form.photo,
-      active: form.active,
-    }, user?.id);
-
-    setStaff(db.getStaffProfiles());
-    toast({ title: form.id ? 'Profil diperbarui' : 'Profil ditambahkan', description: 'Data staff disimpan' });
-    resetForm();
+    if (!photoFile) {
+      toast({ variant: 'destructive', title: 'Foto wajib', description: 'Silakan pilih foto staff' });
+      return;
+    }
+    try {
+      const fd = new FormData();
+      fd.append('file', photoFile);
+      fd.append('name', form.name.trim());
+      fd.append('role', form.position.trim());
+      const res = await fetch('/api/upload/staff', { method: 'POST', headers: { 'x-admin-token': 'SuperAdmin@2025' }, body: fd });
+      const json = await res.json();
+      if (!json?.success) throw new Error(json?.error || 'Gagal menyimpan');
+      const r = await fetch('/api/staff');
+      const j = await r.json();
+      setStaff(j.items || []);
+      toast({ title: 'Profil ditambahkan', description: 'Data staff disimpan' });
+      resetForm();
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Gagal menyimpan', description: err.message });
+    }
   };
 
   const handleEdit = (item) => {
@@ -89,30 +115,34 @@ const StaffManager = ({ user }) => {
       id: item.id,
       name: item.name,
       position: item.position || item.role || '',
-      photo: item.photo || item.image || '',
+      photo: item.photoUrl || item.photo || item.image || '',
       active: item.active !== false,
     });
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     const confirmed = window.confirm('Apakah Anda yakin ingin menghapus data staff ini?');
     if (!confirmed) return;
-    db.deleteStaffProfile(id, user?.id);
-    setStaff(db.getStaffProfiles());
+    await fetch(`/api/staff/${id}`, { method: 'DELETE', headers: { 'x-admin-token': 'SuperAdmin@2025' } });
+    const r = await fetch('/api/staff');
+    const j = await r.json();
+    setStaff(j.items || []);
     toast({ title: 'Staff dihapus', description: 'Data sudah dihapus' });
     if (form.id === id) resetForm();
   };
 
-  const handleToggleActive = (id) => {
+  const handleToggleActive = async (id) => {
     const current = staff.find((s) => s.id === id);
     if (!current) return;
-    db.saveStaffProfile({ ...current, active: !current.active }, user?.id);
-    setStaff(db.getStaffProfiles());
+    await fetch(`/api/staff/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-admin-token': 'SuperAdmin@2025' }, body: JSON.stringify({ active: !current.active }) });
+    const r = await fetch('/api/staff');
+    const j = await r.json();
+    setStaff(j.items || []);
   };
 
   const handleDragStart = (idx) => { dragIndex.current = idx; };
   const handleDragEnter = (idx) => { dragOver.current = idx; };
-  const handleDragEnd = () => {
+  const handleDragEnd = async () => {
     const from = dragIndex.current;
     const to = dragOver.current;
     dragIndex.current = null;
@@ -121,8 +151,9 @@ const StaffManager = ({ user }) => {
     const reordered = [...staff];
     const [moved] = reordered.splice(from, 1);
     reordered.splice(to, 0, moved);
-    const normalized = db.reorderStaffProfiles(reordered, user?.id);
-    setStaff(normalized);
+    setStaff(reordered);
+    const order = reordered.map(s => s.id);
+    await fetch('/api/staff/reorder', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': 'SuperAdmin@2025' }, body: JSON.stringify({ order }) });
     toast({ title: 'Urutan disimpan', description: 'Urutan staff diperbarui' });
   };
 
@@ -259,7 +290,7 @@ const StaffManager = ({ user }) => {
                 >
                   <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                     <img
-                      src={item.photo || item.image || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop'}
+                      src={item.photoUrl || item.photo || item.image || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop'}
                       alt={item.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {

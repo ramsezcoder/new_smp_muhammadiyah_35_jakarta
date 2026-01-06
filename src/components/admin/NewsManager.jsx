@@ -31,7 +31,10 @@ const NewsManager = ({ user, channel }) => {
     tags: '',
       hashtags: '',
       status: 'draft',
-    featuredImage: ''
+    featuredImage: '',
+    featuredImageAlt: '',
+    featuredImageTitle: '',
+    featuredImageName: ''
   });
 
   const [seoData, setSeoData] = useState({
@@ -309,9 +312,16 @@ const NewsManager = ({ user, channel }) => {
 
     setUploadingImage(true);
     try {
-      const dataUrl = await toDataUrl(file);
-      setFormData(prev => ({ ...prev, featuredImage: dataUrl }));
-      toast({ title: 'Gambar diupload', description: 'Featured image berhasil diupload' });
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('customName', formData.featuredImageName || file.name.replace(/\.[^.]+$/, ''));
+      fd.append('alt', formData.featuredImageAlt || formData.title || 'Gambar Artikel');
+      fd.append('title', formData.featuredImageTitle || formData.title || 'Gambar Artikel');
+      const res = await fetch('/api/upload/featured', { method: 'POST', headers: { 'x-admin-token': 'SuperAdmin@2025' }, body: fd });
+      const json = await res.json();
+      if (!json?.success) throw new Error(json?.error || 'Upload gagal');
+      setFormData(prev => ({ ...prev, featuredImage: json.file, featuredImageAlt: json.alt, featuredImageTitle: json.title }));
+      toast({ title: 'Gambar diupload', description: 'Featured image disimpan ke server' });
     } catch (err) {
       toast({ variant: 'destructive', title: 'Upload gagal', description: err.message || 'Coba lagi' });
     } finally {
@@ -341,7 +351,10 @@ const NewsManager = ({ user, channel }) => {
       tags: '',
         hashtags: '',
       status: 'draft',
-      featuredImage: ''
+      featuredImage: '',
+      featuredImageAlt: '',
+      featuredImageTitle: '',
+      featuredImageName: ''
     });
     setSeoData(ensureSeoObject());
     setSeoEdited({
@@ -363,7 +376,10 @@ const NewsManager = ({ user, channel }) => {
       tags: article.tags,
         hashtags: Array.isArray(article.hashtags) ? article.hashtags.join(', ') : '',
       status: article.status,
-      featuredImage: article.featuredImage
+      featuredImage: article.featuredImage,
+      featuredImageAlt: article.featuredImageAlt || '',
+      featuredImageTitle: article.featuredImageTitle || '',
+      featuredImageName: ''
     });
     const safeSeo = ensureSeoObject(article.seo);
     setSeoData({
@@ -589,6 +605,29 @@ const NewsManager = ({ user, channel }) => {
                 >
                   {uploadingImage ? 'Uploading...' : (formData.featuredImage ? 'Ganti Gambar' : 'Upload Gambar')}
                 </Button>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <input
+                    type="text"
+                    value={formData.featuredImageName}
+                    onChange={e => setFormData({...formData, featuredImageName: e.target.value})}
+                    placeholder="Nama Gambar (SEO)"
+                    className="w-full p-2 border rounded-lg text-sm"
+                  />
+                  <input
+                    type="text"
+                    value={formData.featuredImageAlt}
+                    onChange={e => setFormData({...formData, featuredImageAlt: e.target.value})}
+                    placeholder="ALT Text"
+                    className="w-full p-2 border rounded-lg text-sm"
+                  />
+                  <input
+                    type="text"
+                    value={formData.featuredImageTitle}
+                    onChange={e => setFormData({...formData, featuredImageTitle: e.target.value})}
+                    placeholder="TITLE (SEO)"
+                    className="w-full p-2 border rounded-lg text-sm"
+                  />
+                </div>
                 <input
                   type="text"
                   value={formData.featuredImage}

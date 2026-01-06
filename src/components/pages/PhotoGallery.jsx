@@ -25,21 +25,30 @@ const PhotoGallery = () => {
   ];
 
   useEffect(() => {
-    const stored = db.getGallery();
-    if (stored.length) {
-      const uploadedPhotos = stored.map((img, idx) => ({
-        id: img.id || idx,
-        title: db.formatName(img.name || img.filename) || 'Dokumentasi Sekolah',
-        category: img.category || 'Galeri Unggahan',
-        image: img.dataUrl || img.originalUrl || img.url,
-        altText: img.altText || `${img.name || 'Foto'} SMP Muhammadiyah 35 Jakarta`,
-        seoTitle: img.seoTitle || img.name || 'Dokumentasi'
-      }));
-      setPhotos([...uploadedPhotos, ...defaultPhotos]);
-      return;
-    }
-
-    setPhotos(defaultPhotos);
+    const load = async () => {
+      try {
+        const res = await fetch('/api/gallery');
+        const json = await res.json();
+        const stored = json.items || [];
+        if (stored.length) {
+          const uploadedPhotos = stored.map((img, idx) => ({
+            id: img.id || idx,
+            title: db.formatName(img.name || img.filename) || 'Dokumentasi Sekolah',
+            category: img.category || 'Galeri Unggahan',
+            image: img.url,
+            altText: img.altText || `${img.name || 'Foto'} SMP Muhammadiyah 35 Jakarta`,
+            seoTitle: img.seoTitle || img.name || 'Dokumentasi'
+          }));
+          setPhotos([...uploadedPhotos, ...defaultPhotos]);
+          return;
+        }
+        setPhotos(defaultPhotos);
+      } catch (e) {
+        console.warn('[gallery] load failed', e.message);
+        setPhotos(defaultPhotos);
+      }
+    };
+    load();
   }, []);
 
   const navigate = useNavigate();

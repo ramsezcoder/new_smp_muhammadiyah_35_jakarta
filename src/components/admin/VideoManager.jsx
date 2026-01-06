@@ -14,7 +14,16 @@ const VideoManager = ({ user }) => {
   const isSuperadmin = user?.role === 'Superadmin';
 
   useEffect(() => {
-    setVideos(db.getVideos());
+    const load = async () => {
+      try {
+        const res = await fetch('/api/videos');
+        const json = await res.json();
+        setVideos(json.items || []);
+      } catch (e) {
+        toast({ variant: 'destructive', title: 'Gagal memuat video', description: e.message });
+      }
+    };
+    load();
   }, []);
 
   const extractYouTubeId = (url) => {
@@ -35,7 +44,7 @@ const VideoManager = ({ user }) => {
     setForm({ id: null, title: '', description: '', videoType: 'youtube', url: '', thumbnail: '', category: '' });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title.trim() || !form.url.trim()) {
       toast({ variant: 'destructive', title: 'Lengkapi data', description: 'Judul dan URL wajib diisi' });
@@ -55,19 +64,29 @@ const VideoManager = ({ user }) => {
       finalThumbnail = getYouTubeThumbnail(videoId);
     }
 
-    db.saveVideo({
-      id: form.id,
-      title: form.title.trim(),
-      description: form.description.trim(),
-      videoType: form.videoType,
-      url: finalUrl,
-      thumbnail: finalThumbnail,
-      category: form.category.trim() || 'Umum',
-    }, user?.id);
-
-    setVideos(db.getVideos());
-    toast({ title: form.id ? 'Video diperbarui' : 'Video ditambahkan', description: 'Data video disimpan' });
-    resetForm();
+    try {
+      const res = await fetch('/api/videos/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': 'SuperAdmin@2025' },
+        body: JSON.stringify({
+          title: form.title.trim(),
+          description: form.description.trim(),
+          videoType: form.videoType,
+          url: finalUrl,
+          thumbnail: finalThumbnail,
+          category: form.category.trim() || 'Umum',
+        })
+      });
+      const json = await res.json();
+      if (!json?.success) throw new Error(json?.error || 'Gagal menyimpan');
+      const r = await fetch('/api/videos');
+      const j = await r.json();
+      setVideos(j.items || []);
+      toast({ title: 'Video ditambahkan', description: 'Data video disimpan' });
+      resetForm();
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Gagal menyimpan', description: err.message });
+    }
   };
 
   const handleEdit = (item) => {
@@ -82,18 +101,20 @@ const VideoManager = ({ user }) => {
     });
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     const confirmed = window.confirm('Apakah Anda yakin ingin menghapus video ini?');
     if (!confirmed) return;
-    db.deleteVideo(id, user?.id);
-    setVideos(db.getVideos());
+    await fetch(`/api/videos/${id}`, { method: 'DELETE', headers: { 'x-admin-token': 'SuperAdmin@2025' } });
+    const r = await fetch('/api/videos');
+    const j = await r.json();
+    setVideos(j.items || []);
     toast({ title: 'Video dihapus', description: 'Data sudah dihapus' });
     if (form.id === id) resetForm();
   };
 
   const handleDragStart = (idx) => { dragIndex.current = idx; };
   const handleDragEnter = (idx) => { dragOver.current = idx; };
-  const handleDragEnd = () => {
+  const handleDragEnd = async () => {
     const from = dragIndex.current;
     const to = dragOver.current;
     dragIndex.current = null;
@@ -102,17 +123,24 @@ const VideoManager = ({ user }) => {
     const reordered = [...videos];
     const [moved] = reordered.splice(from, 1);
     reordered.splice(to, 0, moved);
-    const normalized = db.reorderVideos(reordered, user?.id);
-    setVideos(normalized);
+    setVideos(reordered);
+    const order = reordered.map(v => v.id);
+    await fetch('/api/videos/reorder', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': 'SuperAdmin@2025' }, body: JSON.stringify({ order }) });
     toast({ title: 'Urutan disimpan', description: 'Urutan video diperbarui' });
   };
 
-  const handleImportDefaults = () => {
+  const handleImportDefaults = async () => {
     const confirmed = window.confirm('Import video default? Akan ditambahkan ke daftar yang ada.');
     if (!confirmed) return;
-    const merged = db.importDefaultVideos(user?.id);
-    setVideos(merged);
-    toast({ title: 'Import berhasil', description: 'Video default ditambahkan' });
+    try {
+      const res = await fetch('/api/videos/import-default', { method: 'POST' });
+      const r = await fetch('/api/videos');
+      const j = await r.json();
+      setVideos(j.items || []);
+      toast({ title: 'Import berhasil', description: 'Video default ditambahkan' });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Import gagal', description: e.message });
+    }
   };
 
   if (!isSuperadmin) {
