@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, User, ArrowRight } from 'lucide-react';
 import { db } from '@/lib/db';
 
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1509062522246-3755977927d7';
+
 const NewsSection = () => {
   const [activeTab, setActiveTab] = useState('school'); // 'school' or 'student'
   const [articles, setArticles] = useState([]);
@@ -11,15 +13,14 @@ const NewsSection = () => {
     // In a real app, db.getNews() would fetch from API
     // We filter locally here
     const allNews = db.getNews().filter(
-        a => a.status === 'published' && (!a.channel || a.channel === activeTab)
+      a => a.status === 'published' && (!a.channel || a.channel === activeTab)
     );
-    setArticles(allNews);
+    setArticles(allNews.slice(0, 4));
   }, [activeTab]);
 
   const handleReadMore = (article) => {
-    // Use slug-based routing
     const slug = article.seo?.slug || article.slug || `article-${article.id}`;
-    window.location.hash = `#article-${slug}`;
+    window.location.href = `/news/${slug}`;
   };
 
   return (
@@ -70,13 +71,16 @@ const NewsSection = () => {
                 className="min-w-[300px] md:min-w-0 snap-center bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group border border-blue-50"
               >
                 <div className="flex flex-col md:flex-row h-full">
-                  <div className="h-48 md:h-auto md:w-2/5 overflow-hidden">
-                    <img 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                      alt={`${article.title} - Berita SMP Muhammadiyah 35 Jakarta`}
-                      src={article.featuredImage}
-                      loading="lazy"
-                    />
+                  <div className="md:w-2/5">
+                    <div className="relative h-48 md:h-full overflow-hidden bg-gray-100">
+                      <img 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                        alt={`${article.title} - Berita SMP Muhammadiyah 35 Jakarta`}
+                        src={article.featuredImage || FALLBACK_IMAGE}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
                   </div>
                   <div className="p-5 md:p-8 md:w-3/5 flex flex-col justify-between">
                     <div>
@@ -123,7 +127,10 @@ const NewsSection = () => {
         </div>
         
         <div className="text-center mt-6 md:mt-10">
-          <button className="text-gray-500 hover:text-[#5D9CEC] font-medium text-xs md:text-sm border-b border-gray-300 hover:border-[#5D9CEC] pb-1 transition-all">
+          <button 
+            onClick={() => window.location.href = '/news'}
+            className="text-gray-500 hover:text-[#5D9CEC] font-medium text-xs md:text-sm border-b border-gray-300 hover:border-[#5D9CEC] pb-1 transition-all"
+          >
             Lihat Semua Berita
           </button>
         </div>

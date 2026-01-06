@@ -72,8 +72,8 @@ const ProgramsSection = () => {
                 whileHover={{ y: -5 }}
                 className="min-w-[280px] md:min-w-0 snap-center bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-xl transition-all duration-300 border border-blue-50 group flex flex-col"
               >
-                <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center mb-4 md:mb-6 transition-colors duration-300">
-                  <img src={program.icon} alt={program.title} className="w-16 h-16 md:w-20 md:h-20 object-contain" />
+                <div className="w-24 h-24 md:w-28 md:h-28 rounded-2xl flex items-center justify-center mb-4 md:mb-6 transition-colors duration-300">
+                  <img src={program.icon} alt={program.title} className="w-20 h-20 md:w-24 md:h-24 object-contain" />
                 </div>
                 <h3 className="font-poppins text-lg md:text-xl font-bold text-gray-800 mb-2 group-hover:text-[#5D9CEC] transition-colors">
                   {program.title}

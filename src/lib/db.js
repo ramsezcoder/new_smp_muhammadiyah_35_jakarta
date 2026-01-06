@@ -1,5 +1,107 @@
 // Simulation of a Database Layer using LocalStorage
 // Abstracts data access to resemble a MySQL schema structure
+import importedPosts from '@/data/importedPosts.json';
+
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1509062522246-3755977927d7';
+
+const normalizeDate = (value) => {
+  if (!value) return new Date().toISOString();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+};
+
+const stripHtml = (html) => {
+  if (!html) return '';
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+};
+
+const computeReadTime = (html) => {
+  const words = stripHtml(html).split(/\s+/).filter(Boolean).length;
+  return Math.max(2, Math.min(15, Math.round(words / 200) || 2));
+};
+
+const extractFirstImage = (html) => {
+  if (!html) return '';
+  const match = html.match(/<img[^>]+src=["']([^"'>\s]+)["']/i);
+  return match?.[1] || '';
+};
+
+const slugKey = (article) => (article?.seo?.slug || article?.slug || String(article?.id || '')).toLowerCase();
+
+const mergeNews = (base = [], incoming = []) => {
+  const map = new Map();
+  base.forEach((item) => {
+    const key = slugKey(item);
+    if (key) map.set(key, item);
+  });
+  incoming.forEach((item) => {
+    const key = slugKey(item);
+    if (!key) return;
+    const prev = map.get(key);
+    if (!prev) {
+      map.set(key, item);
+      return;
+    }
+    const merged = { ...prev, ...item, id: prev.id || item.id };
+    if (prev.featuredImage && (!item.featuredImage || prev.featuredImage !== FALLBACK_IMAGE)) {
+      merged.featuredImage = prev.featuredImage;
+    }
+    map.set(key, merged);
+  });
+  return Array.from(map.values());
+};
+
+const normalizeImportedPost = (post, idx) => {
+  if (!post?.title) return null;
+  const tagsArray = Array.isArray(post.tags)
+    ? post.tags
+    : typeof post.tags === 'string'
+      ? post.tags.split(',').map(t => t.trim()).filter(Boolean)
+      : [];
+  const slug = (post.slug || post.seo?.slug || `imported-${idx}`).toLowerCase();
+  const createdAt = normalizeDate(post.createdAt || post.createdDate);
+  const updatedAt = normalizeDate(post.updatedAt || post.updatedDate || createdAt);
+  const seoTitle = post.seo?.title || post.seo?.seoTitle || post.title;
+  const seoDescription = post.seo?.description || post.seo?.metaDescription || post.excerpt || stripHtml(post.content).slice(0, 200);
+  const keywords = Array.isArray(post.seo?.keywords) ? post.seo.keywords.filter(Boolean) : [];
+  const bodyImage = extractFirstImage(post.content);
+  const featuredImage = post.featuredImage || bodyImage || FALLBACK_IMAGE;
+
+  return {
+    id: post.id || slug || `imported-${idx}`,
+    title: post.title,
+    slug,
+    channel: 'school',
+    excerpt: post.excerpt || stripHtml(post.content).slice(0, 180),
+    content: post.content || '',
+    featuredImage,
+    authorId: post.authorId || 0,
+    authorName: post.authorName || 'Tim Redaksi',
+    authorRole: post.authorRole || 'Editor',
+    category: post.category || 'Berita',
+    tags: tagsArray.join(', '),
+    hashtags: tagsArray.slice(0, 4).map(t => `#${t.replace(/^#+/, '').replace(/\s+/g, '')}`),
+    seo: {
+      focusKeyphrase: post.seo?.focusKeyphrase || keywords[0] || '',
+      seoTitle,
+      slug,
+      metaDescription: seoDescription,
+      readabilityScore: post.seo?.readabilityScore || 70,
+      seoScore: post.seo?.seoScore || 70,
+      keywordSuggestions: keywords,
+      aiNotes: post.seo?.aiNotes || []
+    },
+    readTime: post.readTime || computeReadTime(post.content),
+    status: post.status || 'published',
+    createdAt,
+    updatedAt,
+    publishedAt: post.publishedAt || createdAt
+  };
+};
+
+const IMPORTED_NEWS = (Array.isArray(importedPosts) ? importedPosts : [])
+  .map(normalizeImportedPost)
+  .filter(Boolean);
 
 const DEFAULT_USERS = [
   { id: 1, email: 'superadmin@smpmuh35.id', password: 'SuperAdmin@2025', name: 'Super Admin', role: 'Superadmin', status: 'active', lastLogin: null },
@@ -21,7 +123,7 @@ const DEFAULT_SETTINGS = {
   maintenanceMode: false
 };
 
-const DEFAULT_NEWS = [
+const BASE_DEFAULT_NEWS = [
   {
     id: 1,
     title: 'Semarak Muhammadiyah Expo III 2025',
@@ -81,6 +183,8 @@ const DEFAULT_NEWS = [
     publishedAt: '2025-01-15T09:00:00Z'
   }
 ];
+
+const DEFAULT_NEWS = mergeNews(BASE_DEFAULT_NEWS, IMPORTED_NEWS);
 
 export const db = {
   // --- HELPERS ---
@@ -152,7 +256,15 @@ export const db = {
   },
 
   // --- NEWS ---
-  getNews: () => db._getData('app_news', DEFAULT_NEWS),
+  getNews: () => {
+    const stored = db._getData('app_news', DEFAULT_NEWS);
+    const merged = mergeNews(stored, IMPORTED_NEWS);
+    return merged.sort((a, b) => {
+      const aDate = new Date(a.publishedAt || a.createdAt || 0).getTime();
+      const bDate = new Date(b.publishedAt || b.createdAt || 0).getTime();
+      return bDate - aDate;
+    });
+  },
   
   saveNews: (article, userId) => {
     const news = db.getNews();

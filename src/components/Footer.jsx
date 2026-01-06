@@ -45,8 +45,8 @@ const Footer = () => {
                 <li><button onClick={() => scrollToSection('hero')} className="hover:text-[#5D9CEC] transition-colors">Beranda</button></li>
                 <li><button onClick={() => scrollToSection('welcome')} className="hover:text-[#5D9CEC] transition-colors">Profil Sekolah</button></li>
                 <li><button onClick={() => scrollToSection('programs')} className="hover:text-[#5D9CEC] transition-colors">Program Unggulan</button></li>
-                <li><button onClick={() => scrollToSection('news')} className="hover:text-[#5D9CEC] transition-colors">Berita</button></li>
-                <li><button onClick={() => window.location.hash = '#admin'} className="hover:text-[#5D9CEC] transition-colors">Admin Login</button></li>
+                <li><button onClick={() => window.location.href = '/news'} className="hover:text-[#5D9CEC] transition-colors">Berita</button></li>
+                <li><button onClick={() => window.location.href = '/admin'} className="hover:text-[#5D9CEC] transition-colors">Admin Login</button></li>
               </ul>
             </div>
 

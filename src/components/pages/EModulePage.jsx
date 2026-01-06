@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Download, Eye, BookOpen, FileText } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Download, Eye, BookOpen, FileText, X } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 const EModulePage = () => {
   const modules = [
@@ -12,7 +14,8 @@ const EModulePage = () => {
       description: "Materi PKN lengkap kelas 7, 8, dan 9 meliputi Pancasila, UUD 1945, dan nilai-nilai kebangsaan",
       icon: "📘",
       size: "2.5 MB",
-      pages: 45
+      pages: 45,
+      pdfUrl: '/pdfs/emodule-sample.pdf'
     },
     {
       id: 2,
@@ -21,7 +24,8 @@ const EModulePage = () => {
       description: "Modul pembelajaran bahasa Indonesia mencakup tata bahasa, sastra, dan keterampilan menulis",
       icon: "📖",
       size: "3.2 MB",
-      pages: 58
+      pages: 58,
+      pdfUrl: '/pdfs/emodule-sample.pdf'
     },
     {
       id: 3,
@@ -30,7 +34,8 @@ const EModulePage = () => {
       description: "E-modul matematika dengan pembahasan aljabar, geometri, statistika dan latihan soal",
       icon: "🔢",
       size: "4.1 MB",
-      pages: 72
+      pages: 72,
+      pdfUrl: '/pdfs/emodule-sample.pdf'
     },
     {
       id: 4,
@@ -39,7 +44,8 @@ const EModulePage = () => {
       description: "Materi IPA terpadu meliputi Fisika, Biologi, dan Kimia dengan ilustrasi lengkap",
       icon: "🔬",
       size: "5.8 MB",
-      pages: 95
+      pages: 95,
+      pdfUrl: '/pdfs/emodule-sample.pdf'
     },
     {
       id: 5,
@@ -48,7 +54,8 @@ const EModulePage = () => {
       description: "Modul IPS mencakup Geografi, Sejarah, Ekonomi, dan Sosiologi",
       icon: "🌍",
       size: "3.9 MB",
-      pages: 68
+      pages: 68,
+      pdfUrl: '/pdfs/emodule-sample.pdf'
     },
     {
       id: 6,
@@ -57,7 +64,8 @@ const EModulePage = () => {
       description: "English learning module with grammar, vocabulary, reading and conversation practice",
       icon: "🇬🇧",
       size: "3.5 MB",
-      pages: 62
+      pages: 62,
+      pdfUrl: '/pdfs/emodule-sample.pdf'
     },
     {
       id: 7,
@@ -66,7 +74,8 @@ const EModulePage = () => {
       description: "Materi PAI meliputi Al-Quran Hadits, Akidah Akhlak, Fiqih, dan Sejarah Islam",
       icon: "☪️",
       size: "4.2 MB",
-      pages: 78
+      pages: 78,
+      pdfUrl: '/pdfs/emodule-sample.pdf'
     },
     {
       id: 8,
@@ -75,7 +84,8 @@ const EModulePage = () => {
       description: "Modul seni mencakup seni rupa, seni musik, seni tari, dan apresiasi seni",
       icon: "🎨",
       size: "6.3 MB",
-      pages: 85
+      pages: 85,
+      pdfUrl: '/pdfs/emodule-sample.pdf'
     },
     {
       id: 9,
@@ -84,7 +94,8 @@ const EModulePage = () => {
       description: "Materi PJOK teori dan praktik olahraga serta pendidikan kesehatan",
       icon: "⚽",
       size: "2.8 MB",
-      pages: 48
+      pages: 48,
+      pdfUrl: '/pdfs/emodule-sample.pdf'
     },
     {
       id: 10,
@@ -93,7 +104,8 @@ const EModulePage = () => {
       description: "E-modul prakarya dengan berbagai kreasi dan pengembangan jiwa wirausaha",
       icon: "🛠️",
       size: "4.5 MB",
-      pages: 65
+      pages: 65,
+      pdfUrl: '/pdfs/emodule-sample.pdf'
     },
     {
       id: 11,
@@ -102,7 +114,8 @@ const EModulePage = () => {
       description: "Pembelajaran bahasa Arab dasar hingga menengah dengan kosakata dan tata bahasa",
       icon: "🕌",
       size: "3.1 MB",
-      pages: 52
+      pages: 52,
+      pdfUrl: '/pdfs/emodule-sample.pdf'
     },
     {
       id: 12,
@@ -111,7 +124,8 @@ const EModulePage = () => {
       description: "Materi khusus tentang sejarah, gerakan, dan nilai-nilai Muhammadiyah",
       icon: "⭐",
       size: "2.9 MB",
-      pages: 44
+      pages: 44,
+      pdfUrl: '/pdfs/emodule-sample.pdf'
     },
     {
       id: 13,
@@ -120,7 +134,8 @@ const EModulePage = () => {
       description: "Modul pembelajaran teknologi informasi, coding, dan literasi digital",
       icon: "💻",
       size: "5.2 MB",
-      pages: 82
+      pages: 82,
+      pdfUrl: '/pdfs/emodule-sample.pdf'
     },
     {
       id: 14,
@@ -129,9 +144,67 @@ const EModulePage = () => {
       description: "Panduan pengembangan diri, karir, dan konseling pribadi-sosial",
       icon: "🎯",
       size: "2.1 MB",
-      pages: 38
+      pages: 38,
+      pdfUrl: '/pdfs/emodule-sample.pdf'
     }
   ];
+
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [userRole, setUserRole] = useState('student');
+  const [viewCounts, setViewCounts] = useState({});
+  const [previewModule, setPreviewModule] = useState(null);
+
+  const fetchViews = async () => {
+    try {
+      const res = await fetch('/api/pdf/views');
+      if (!res.ok) throw new Error('Failed to load views');
+      const data = await res.json();
+      setViewCounts(data.views || {});
+    } catch (err) {
+      console.warn('[pdf] fetch views failed', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchViews();
+  }, []);
+
+  const incrementView = async (module) => {
+    try {
+      const res = await fetch(`/api/pdf/view/${module.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: module.title })
+      });
+      if (!res.ok) throw new Error('increment failed');
+      const updated = await res.json();
+      setViewCounts((prev) => ({ ...prev, [module.id]: updated }));
+    } catch (err) {
+      console.warn('[pdf] increment view failed', err);
+    }
+  };
+
+  const handlePreview = (module) => {
+    if (!module.pdfUrl) return;
+    incrementView(module);
+    setPreviewModule(module);
+  };
+
+  const handleDownload = (module) => {
+    if (userRole === 'student') {
+      toast({ title: 'Akses terbatas', description: 'Role siswa hanya dapat membaca online.', variant: 'destructive' });
+      return;
+    }
+    incrementView(module);
+    window.open(module.pdfUrl, '_blank');
+  };
+
+  const roleLabel = useMemo(() => {
+    if (userRole === 'admin') return 'Admin (akses penuh)';
+    if (userRole === 'teacher') return 'Guru (baca + unduh)';
+    return 'Siswa (baca saja)';
+  }, [userRole]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E8F4F8] to-white pt-24 pb-20">
@@ -143,12 +216,27 @@ const EModulePage = () => {
       <div className="container mx-auto px-4">
         {/* Back Button */}
         <button 
-          onClick={() => window.location.hash = ''}
+          onClick={() => navigate('/')}
           className="flex items-center gap-2 text-gray-600 hover:text-[#5D9CEC] mb-8 transition-colors"
         >
           <ArrowLeft size={20} />
           <span>Kembali ke Beranda</span>
         </button>
+
+        {/* Role switcher (simulation) */}
+        <div className="flex items-center gap-3 bg-white border border-blue-50 rounded-2xl shadow-sm px-4 py-3 mb-6 w-fit">
+          <span className="text-sm text-gray-600">Role akses:</span>
+          <select
+            value={userRole}
+            onChange={(e) => setUserRole(e.target.value)}
+            className="text-sm bg-[#F5FAFF] border border-blue-100 rounded-xl px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#5D9CEC]"
+          >
+            <option value="student">Siswa</option>
+            <option value="teacher">Guru</option>
+            <option value="admin">Admin</option>
+          </select>
+          <span className="text-xs text-gray-500">{roleLabel}</span>
+        </div>
 
         {/* Header */}
         <motion.div
@@ -215,7 +303,7 @@ const EModulePage = () => {
               className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group"
             >
               {/* Card Header */}
-              <div className="bg-gradient-to-br from-[#5D9CEC] to-[#4A89DC] p-6 text-white">
+              <div className="bg-gradient-to-br from-[#5D9CEC] to-[#4A89DC] p-6 text-white select-none">
                 <div className="flex items-start justify-between mb-4">
                   <div className="text-5xl">{module.icon}</div>
                   <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium">
@@ -243,15 +331,30 @@ const EModulePage = () => {
                     <Download size={16} />
                     <span>{module.size}</span>
                   </div>
+                  <div className="flex items-center gap-1">
+                    <Eye size={16} />
+                    <span>Viewed {viewCounts[module.id]?.viewCount || 0}x</span>
+                  </div>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex gap-2">
-                  <button className="flex-1 flex items-center justify-center gap-2 bg-[#E8F4F8] text-[#5D9CEC] px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-[#5D9CEC] hover:text-white transition-colors">
+                  <button
+                    onClick={() => handlePreview(module)}
+                    className="flex-1 flex items-center justify-center gap-2 bg-[#E8F4F8] text-[#5D9CEC] px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-[#5D9CEC] hover:text-white transition-colors"
+                  >
                     <Eye size={16} />
                     Baca Online
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 bg-[#5D9CEC] text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-[#4A89DC] transition-colors">
+                  <button
+                    onClick={() => handleDownload(module)}
+                    disabled={userRole === 'student'}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-colors ${
+                      userRole === 'student'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-[#5D9CEC] text-white hover:bg-[#4A89DC]'
+                    }`}
+                  >
                     <Download size={16} />
                     Download
                   </button>
@@ -300,6 +403,66 @@ const EModulePage = () => {
           </div>
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {previewModule && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            onContextMenu={(e) => e.preventDefault()}
+          >
+            <motion.div
+              initial={{ scale: 0.96, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-5xl bg-white rounded-2xl overflow-hidden shadow-2xl"
+            >
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-[#F5FAFF]">
+                <div>
+                  <p className="text-xs text-gray-500">{previewModule.subject}</p>
+                  <h4 className="font-poppins font-bold text-gray-800 text-lg">{previewModule.title}</h4>
+                </div>
+                <button
+                  onClick={() => setPreviewModule(null)}
+                  className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="relative bg-gray-50" onContextMenu={(e) => e.preventDefault()}>
+                <div className="absolute inset-0 pointer-events-none select-none" aria-hidden>
+                  <div className="w-full h-full" style={{
+                    backgroundImage: 'repeating-linear-gradient(45deg, rgba(93,156,236,0.08) 0, rgba(93,156,236,0.08) 20px, transparent 20px, transparent 40px)',
+                  }}></div>
+                  <div className="absolute inset-0 flex flex-wrap items-center justify-center text-[#5D9CEC]/30 font-bold text-2xl tracking-wide rotate-[-15deg]">
+                    <span className="m-6">SMP Muhammadiyah 35 Jakarta</span>
+                    <span className="m-6">Preview Only</span>
+                  </div>
+                </div>
+                <embed
+                  src={`${previewModule.pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                  type="application/pdf"
+                  className="w-full h-[75vh] relative z-10"
+                />
+              </div>
+              <div className="px-4 py-3 flex items-center justify-between bg-white border-t border-gray-100 text-sm text-gray-600">
+                <span>Viewed {viewCounts[previewModule.id]?.viewCount || 1}x · Last opened {viewCounts[previewModule.id]?.lastOpened || 'baru saja'}</span>
+                {userRole !== 'student' && (
+                  <button
+                    onClick={() => handleDownload(previewModule)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#5D9CEC] text-white hover:bg-[#4A89DC]"
+                  >
+                    <Download size={16} />
+                    Download PDF
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

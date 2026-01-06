@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const StaffPage = () => {
@@ -19,6 +20,8 @@ const StaffPage = () => {
     { name: "Rahayu Wuryaningsih", role: "Guru Bahasa Jawa", image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&h=300&fit=crop" },
   ];
 
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E8F4F8] to-white pt-24 pb-20">
       <Helmet>
@@ -29,7 +32,7 @@ const StaffPage = () => {
       <div className="container mx-auto px-4">
         {/* Back Button */}
         <button 
-          onClick={() => window.location.hash = ''}
+          onClick={() => navigate('/')}
           className="flex items-center gap-2 text-gray-600 hover:text-[#5D9CEC] mb-8 transition-colors"
         >
           <ArrowLeft size={20} />

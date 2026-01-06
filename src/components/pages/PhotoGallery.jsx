@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, X } from 'lucide-react';
 
 const PhotoGallery = () => {
@@ -21,6 +22,8 @@ const PhotoGallery = () => {
     { id: 12, title: "Peringatan Hari Besar", category: "Keagamaan", image: "https://images.unsplash.com/photo-1544531586-fde5298cdd40?w=800&h=600&fit=crop" }
   ];
 
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E8F4F8] to-white pt-24 pb-20">
       <Helmet>
@@ -31,7 +34,7 @@ const PhotoGallery = () => {
       <div className="container mx-auto px-4">
         {/* Back Button */}
         <button 
-          onClick={() => window.location.hash = ''}
+          onClick={() => navigate('/')}
           className="flex items-center gap-2 text-gray-600 hover:text-[#5D9CEC] mb-8 transition-colors"
         >
           <ArrowLeft size={20} />

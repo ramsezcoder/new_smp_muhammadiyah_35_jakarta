@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { motion } from 'framer-motion';
+import { useNavigate, useParams } from 'react-router-dom';
 import { 
   Calendar, Clock, User, ArrowLeft, Facebook, Twitter, Link as LinkIcon, 
   Instagram, Send, MessageCircle 
@@ -8,53 +8,158 @@ import {
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { SITE_INFO, generateTitle, getArticleSchema, getBreadcrumbSchema, getShareUrls } from '@/lib/seo-utils';
+import { SITE_INFO, getBreadcrumbSchema, getOrganizationSchema, getShareUrls } from '@/lib/seo-utils';
 
-const ArticleDetail = ({ articleId, onBack }) => {
+const ArticleDetail = ({ articleId, slugParam, onBack }) => {
   const { toast } = useToast();
+  const params = useParams();
+  const navigate = useNavigate();
   const [article, setArticle] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const resolvedSlug = slugParam || params?.slug;
+  const resolvedId = articleId || (params?.id ? parseInt(params.id, 10) : null);
 
   useEffect(() => {
-    // In a real app, we would fetch by slug or ID
-    const news = db.getNews();
-    const found = news.find(n => n.id === articleId) || news[0]; // Fallback to first for demo
-    setArticle(found);
-    window.scrollTo(0, 0);
-  }, [articleId]);
+    let isMounted = true;
 
-  if (!article) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    const fallbackFromDb = () => {
+      const news = db.getNews();
+      let found = null;
 
-  const articleSlug = article.seo?.slug || article.slug || `article-${articleId}`;
-  const articleUrl = `${SITE_INFO.url}article/${articleSlug}`;
-  const shareUrls = getShareUrls(articleUrl, article.title);
-  const articleImage = article.featuredImage || SITE_INFO.image;
-  const seoTitle = article.seo?.seoTitle || article.title;
-  const metaDescription = article.seo?.metaDescription || article.excerpt || article.title;
-  const keywordSuggestions = Array.isArray(article.seo?.keywordSuggestions) ? article.seo.keywordSuggestions : [];
+      if (resolvedId) {
+        found = news.find((n) => n.id === resolvedId);
+      }
 
-  // Generate SEO keywords from tags and hashtags
+      if (!found && resolvedSlug) {
+        found = news.find((n) => (n.seo?.slug || n.slug) === resolvedSlug) || news.find((n) => String(n.id) === resolvedSlug);
+      }
+
+      return found || news[0] || null;
+    };
+
+    const fetchArticle = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        let record = null;
+
+        if (!resolvedId && resolvedSlug) {
+          const res = await fetch(`/api/news/detail/${resolvedSlug}`);
+          if (!res.ok) throw new Error('Failed to fetch news detail');
+          const payload = await res.json();
+          record = payload.record || payload.data || payload.article || payload.post || null;
+        }
+
+        if (!record) {
+          record = fallbackFromDb();
+        }
+
+        if (!record) throw new Error('Article not found');
+
+        if (isMounted) {
+          setArticle(record);
+          console.log('news_viewed', record.slug || resolvedSlug || record.id);
+        }
+      } catch (err) {
+        console.warn('[news] detail fetch failed', err);
+        const fallback = fallbackFromDb();
+        if (isMounted) {
+          setError('Gagal memuat artikel, menampilkan konten lokal.');
+          setArticle(fallback);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }
+    };
+
+    fetchArticle();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [resolvedId, resolvedSlug]);
+
+  useEffect(() => {
+    if (error) {
+      toast({ title: 'Gagal memuat artikel', description: error, variant: 'destructive' });
+    }
+  }, [error, toast]);
+
+  const baseSlug = article?.seo?.slug || article?.slug || resolvedSlug || `article-${articleId || article?.id || 'detail'}`;
+  const articleUrl = `${SITE_INFO.url}news/${baseSlug}`;
+  const shareUrls = getShareUrls(articleUrl, article?.title || 'Berita SMP Muhammadiyah 35 Jakarta');
+  const articleImage = article?.featuredImage || SITE_INFO.image;
+  const computedTitle = article ? `${article.title} | SMP Muhammadiyah 35 Jakarta` : 'Berita | SMP Muhammadiyah 35 Jakarta';
+  const seoTitle = computedTitle;
+  const plainText = (article?.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  const rawDescription = article?.seo?.metaDescription || article?.excerpt || plainText || article?.title || 'Berita SMP Muhammadiyah 35 Jakarta';
+  const metaDescription = rawDescription.slice(0, 160);
+  const keywordSuggestions = Array.isArray(article?.seo?.keywordSuggestions) ? article.seo.keywordSuggestions : [];
+
   const seoKeywords = Array.from(new Set([
-    ...(article.tags ? article.tags.split(',').map(t => t.trim()) : []),
-    ...(Array.isArray(article.hashtags) ? article.hashtags.map(h => h.replace('#', '')) : []),
+    ...(article?.tags ? article.tags.split(',').map((t) => t.trim()) : []),
+    ...(Array.isArray(article?.hashtags) ? article.hashtags.map((h) => h.replace('#', '')) : []),
     ...keywordSuggestions,
     'SMP Muhammadiyah 35 Jakarta',
     'Berita Sekolah'
   ].filter(Boolean))).slice(0, 10).join(', ');
-  
-  const articleSchemaData = getArticleSchema({
-    title: seoTitle,
+
+  const breadcrumbJsonLd = getBreadcrumbSchema([
+    { name: 'Home', url: SITE_INFO.url },
+    { name: 'Berita', url: `${SITE_INFO.url}news` },
+    { name: article?.title || 'Detail Berita', url: articleUrl }
+  ]);
+
+  const newsJsonLd = article ? {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: article.title,
     description: metaDescription,
-    image: articleImage,
-    publishDate: article.publishedAt || article.createdAt,
-    modifiedDate: article.updatedAt || article.publishedAt || article.createdAt,
-    author: article.authorName,
-    authorRole: article.authorRole,
+    image: [articleImage],
+    datePublished: article.publishedAt || article.createdAt,
+    dateModified: article.updatedAt || article.publishedAt || article.createdAt,
+    author: { '@type': 'Organization', name: 'SMP Muhammadiyah 35 Jakarta', url: SITE_INFO.url },
+    publisher: {
+      '@type': 'Organization',
+      name: 'SMP Muhammadiyah 35 Jakarta',
+      logo: { '@type': 'ImageObject', url: SITE_INFO.image }
+    },
+    mainEntityOfPage: articleUrl,
     url: articleUrl
-  });
+  } : null;
+
+  if (loading || !article) {
+    return (
+      <div className="min-h-screen bg-white pt-24 pb-20">
+        <Helmet>
+          <html lang="id" />
+          <title>{computedTitle}</title>
+          <meta name="description" content={metaDescription} />
+          <link rel="canonical" href={articleUrl} />
+        </Helmet>
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="animate-pulse space-y-6">
+            <div className="h-5 w-32 bg-gray-100 rounded" />
+            <div className="h-12 w-2/3 bg-gray-100 rounded" />
+            <div className="h-64 bg-gray-100 rounded-3xl" />
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-100 rounded" />
+              <div className="h-4 bg-gray-100 rounded" />
+              <div className="h-4 w-5/6 bg-gray-100 rounded" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleShare = (platform) => {
     const url = articleUrl;
-    const text = `Check out this article: ${article.title}`;
     
     let shareUrl = '';
     switch(platform) {
@@ -88,15 +193,24 @@ const ArticleDetail = ({ articleId, onBack }) => {
     </button>
   );
 
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
+    navigate('/news');
+  };
+
   return (
     <div className="min-h-screen bg-white pt-24 pb-20">
       {/* SEO Meta Tags */}
       <Helmet>
         <html lang="id" />
-        <title>{generateTitle(seoTitle)}</title>
+        <title>{computedTitle}</title>
         <meta name="description" content={metaDescription} />
         <meta name="keywords" content={seoKeywords} />
         <link rel="canonical" href={articleUrl} />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         
         {/* Open Graph */}
         <meta property="og:type" content="article" />
@@ -115,24 +229,25 @@ const ArticleDetail = ({ articleId, onBack }) => {
         <meta name="twitter:description" content={metaDescription} />
         <meta name="twitter:image" content={articleImage} />
         
-        {/* Article Structured Data */}
-        <script type="application/ld+json">
-          {JSON.stringify(articleSchemaData)}
-        </script>
-        
-        {/* Breadcrumb Structured Data */}
-        <script type="application/ld+json">
-          {JSON.stringify(getBreadcrumbSchema([
-            { name: 'Home', url: SITE_INFO.url },
-            { name: 'Berita', url: `${SITE_INFO.url}#news` },
-            { name: article.title, url: articleUrl }
-          ]))}
-        </script>
+        {newsJsonLd && (
+          <script type="application/ld+json">
+            {JSON.stringify(newsJsonLd)}
+          </script>
+        )}
+        <script type="application/ld+json">{JSON.stringify(getOrganizationSchema())}</script>
+        <script type="application/ld+json">{JSON.stringify(breadcrumbJsonLd)}</script>
       </Helmet>
 
       {/* Breadcrumb & Back */}
-      <div className="container mx-auto px-4 mb-8">
-        <Button variant="ghost" onClick={onBack} className="gap-2 text-gray-500 hover:text-[#5D9CEC]">
+      <div className="container mx-auto px-4 mb-6 flex items-center justify-between flex-wrap gap-3">
+        <div className="text-sm text-gray-500 flex items-center gap-2">
+          <button className="hover:text-[#5D9CEC]" onClick={() => navigate('/')}>Home</button>
+          <span className="text-gray-400">›</span>
+          <button className="hover:text-[#5D9CEC]" onClick={() => navigate('/news')}>Kanal Berita</button>
+          <span className="text-gray-400">›</span>
+          <span className="text-gray-700 line-clamp-1 max-w-xs md:max-w-sm">{article.title}</span>
+        </div>
+        <Button variant="ghost" onClick={handleBack} className="gap-2 text-gray-500 hover:text-[#5D9CEC]">
           <ArrowLeft size={18} /> Back to News
         </Button>
       </div>
@@ -166,7 +281,7 @@ const ArticleDetail = ({ articleId, onBack }) => {
             <span>•</span>
             <div className="flex items-center gap-1">
               <Clock size={14} />
-              {article.readTime} min read
+              {article.readTime || 5} min read
             </div>
           </div>
         </header>

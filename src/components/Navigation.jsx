@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronDown, Instagram, Youtube, Facebook } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -6,6 +7,8 @@ const Navigation = ({ onRegisterClick }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -28,61 +31,64 @@ const Navigation = ({ onRegisterClick }) => {
       return false;
     };
 
-    if (window.location.hash !== '' && !window.location.hash.startsWith('#')) {
-       window.location.hash = '';
-       setTimeout(() => {
-          if (!attemptScroll()) {
-            window.location.href = `/#${sectionId}`;
-          }
-       }, 100);
-    } else {
-        if (!attemptScroll()) {
-          window.location.href = `/#${sectionId}`;
-        }
+    if (location.pathname !== '/') {
+      navigate(`/#${sectionId}`);
+      return;
+    }
+
+    if (!attemptScroll()) {
+      navigate(`/#${sectionId}`);
     }
   };
 
   const handleMenuClick = (href) => {
-    // If it's a hash route (new pages), navigate directly
-    if (href.startsWith('#')) {
-      window.location.hash = href;
+    if (href.startsWith('/')) {
+      navigate(href);
       setIsMobileMenuOpen(false);
       setActiveDropdown(null);
-    } else {
-      // Check if we're on a subpage (not home)
-      const isOnSubpage = window.location.hash !== '' && !window.location.hash.startsWith('#article-');
-      
-      if (isOnSubpage) {
-        // Navigate to home with section anchor
-        window.location.href = `/#${href}`;
-      } else {
-        // Already on home, just scroll
-        scrollToSection(href);
-      }
-      
-      setIsMobileMenuOpen(false);
-      setActiveDropdown(null);
+      return;
     }
+
+    if (href.startsWith('#')) {
+      const anchor = href.replace('#', '');
+      if (location.pathname !== '/') {
+        navigate(`/#${anchor}`);
+      } else {
+        scrollToSection(anchor);
+      }
+      setIsMobileMenuOpen(false);
+      setActiveDropdown(null);
+      return;
+    }
+
+    const isOnHome = location.pathname === '/';
+    if (!isOnHome) {
+      navigate(`/#${href}`);
+    } else {
+      scrollToSection(href);
+    }
+    setIsMobileMenuOpen(false);
+    setActiveDropdown(null);
   };
   const menuItems = [
     { label: 'Home', href: 'hero' },
-    { label: 'News', href: 'news' },
+    { label: 'News', href: '/news' },
     { 
       label: 'Profile', 
       href: '#',
       dropdown: [
-        { label: 'Guru & Karyawan', href: '#profile/staff' },
-        { label: 'Visi & Misi', href: '#profile/vision-mission' },
-        { label: 'Sejarah', href: '#profile/history' }
+        { label: 'Guru & Karyawan', href: '/profile/staff' },
+        { label: 'Visi & Misi', href: '/profile/vision-mission' },
+        { label: 'Sejarah', href: '/profile/history' }
       ]
     },
     { 
       label: 'Gallery', 
       href: 'gallery',
       dropdown: [
-        { label: 'Photo', href: '#gallery/photos' },
-        { label: 'Video', href: '#gallery/videos' },
-        { label: 'Infographic', href: '#gallery/infographics' }
+        { label: 'Photo', href: '/gallery/photos' },
+        { label: 'Video', href: '/gallery/videos' },
+        { label: 'Infographic', href: '/gallery/infographics' }
       ]
     },
     { label: 'Facilities', href: 'facilities' },
@@ -101,8 +107,8 @@ const Navigation = ({ onRegisterClick }) => {
       label: 'Student', 
       href: 'achievements',
       dropdown: [
-        { label: 'Prestasi', href: '#student/prestasi' },
-        { label: 'E-Modul', href: '#student/e-module' }
+        { label: 'Prestasi', href: '/student/prestasi' },
+        { label: 'E-Modul', href: '/student/e-module' }
       ]
     },
   ];

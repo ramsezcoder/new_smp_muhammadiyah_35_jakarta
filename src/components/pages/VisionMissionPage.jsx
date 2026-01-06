@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Target, CheckCircle2 } from 'lucide-react';
 
 const VisionMissionPage = () => {
@@ -13,6 +14,8 @@ const VisionMissionPage = () => {
     "Mengembangkan kompetensi guru dan tenaga kependidikan secara berkelanjutan"
   ];
 
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E8F4F8] to-white pt-24 pb-20">
       <Helmet>
@@ -23,7 +26,7 @@ const VisionMissionPage = () => {
       <div className="container mx-auto px-4">
         {/* Back Button */}
         <button 
-          onClick={() => window.location.hash = ''}
+          onClick={() => navigate('/')}
           className="flex items-center gap-2 text-gray-600 hover:text-[#5D9CEC] mb-8 transition-colors"
         >
           <ArrowLeft size={20} />
