@@ -56,3 +56,23 @@ CREATE TABLE IF NOT EXISTS articles (
   INDEX idx_status (status),
   INDEX idx_published_at (published_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Users table for admin authentication
+CREATE TABLE IF NOT EXISTS users (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('Superadmin','Admin','Author') NOT NULL DEFAULT 'Admin',
+  status ENUM('active','disabled') NOT NULL DEFAULT 'active',
+  last_login DATETIME DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Settings key/value storage
+CREATE TABLE IF NOT EXISTS settings (
+  `key` VARCHAR(100) PRIMARY KEY,
+  `value` TEXT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

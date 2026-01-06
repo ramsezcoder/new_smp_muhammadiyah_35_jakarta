@@ -8,6 +8,7 @@ return [
     'pass' => getenv('DB_PASS') ?: 'dbpass',
     'charset' => 'utf8mb4'
   ],
+  'jwt_secret' => getenv('JWT_SECRET') ?: 'change-this-secret',
   'uploads' => [
     'base' => dirname(__DIR__) . '/uploads',
     'articles' => dirname(__DIR__) . '/uploads/articles',

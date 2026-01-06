@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Lock, Mail, AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react';
-import { db } from '@/lib/db';
+import { apiLogin } from '@/lib/authApi';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -13,29 +13,24 @@ const AdminLogin = ({ onLoginSuccess }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
     try {
-      // Simulate network delay
-      setTimeout(() => {
-        try {
-          const session = db.login(email, password);
-          toast({
-            title: "Login Berhasil",
-            description: `Selamat datang kembali, ${session.user.name}`,
-          });
-          onLoginSuccess(session.user);
-        } catch (err) {
-          setError(err.message);
-        } finally {
-          setIsLoading(false);
-        }
-      }, 800);
+      const data = await apiLogin(email, password);
+      const session = {
+        user: data.user,
+        token: data.token,
+        expiresAt: Date.now() + 6 * 60 * 60 * 1000
+      };
+      localStorage.setItem('app_session', JSON.stringify(session));
+      toast({ title: 'Login Berhasil', description: `Selamat datang kembali, ${session.user.name}` });
+      onLoginSuccess(session.user);
     } catch (err) {
-      setError("An unexpected error occurred");
+      setError(err.message || 'Login gagal');
+    } finally {
       setIsLoading(false);
     }
   };
