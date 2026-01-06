@@ -10,11 +10,12 @@ const VideoGallery = () => {
 
   useEffect(() => {
     const load = async () => {
+      // Try public published JSON
       try {
-        const res = await fetch('/api/videos');
-        const json = await res.json();
-        const stored = json.items || [];
-        if (stored.length) {
+        const res = await fetch('/data/published_videos.json', { cache: 'no-cache' });
+        if (res.ok) {
+          const json = await res.json();
+          const stored = Array.isArray(json) ? json : (json.items || []);
           setVideos(stored.map((v, idx) => ({
             id: v.id || idx,
             title: v.title || 'Video Sekolah',
@@ -23,11 +24,22 @@ const VideoGallery = () => {
             description: v.description || '',
             thumbnail: v.thumbnail || ''
           })));
-        } else {
-          setVideos([]);
+          return;
         }
-      } catch (e) {
-        console.warn('[VideoGallery] API load failed:', e.message);
+      } catch {}
+      // Fallback to localStorage
+      try {
+        const raw = localStorage.getItem('cms_videos_published');
+        const stored = raw ? JSON.parse(raw) : [];
+        setVideos(stored.map((v, idx) => ({
+          id: v.id || idx,
+          title: v.title || 'Video Sekolah',
+          category: v.category || 'Umum',
+          embedId: v.url ? (v.url.split('embed/')[1] || v.url.split('v=')[1] || '').split('&')[0] : '',
+          description: v.description || '',
+          thumbnail: v.thumbnail || ''
+        })));
+      } catch {
         setVideos([]);
       }
     };

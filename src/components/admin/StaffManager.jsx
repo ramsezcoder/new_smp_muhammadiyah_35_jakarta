@@ -4,8 +4,10 @@ import { Upload, Trash2, Pencil, GripVertical, CheckCircle2, XCircle } from 'luc
 import { useToast } from '@/components/ui/use-toast';
 import { db } from '@/lib/db';
 import { validateImageFile } from '@/lib/api-utils';
-import { staffStorage, simulateUpload } from '@/lib/staticStorage';
-import { STATIC_MODE, MESSAGES } from '@/config/staticMode';
+import { staffStorage } from '@/lib/staticStorage';
+import { getBlobUrl } from '@/lib/blobStore';
+import { exportJson } from '@/lib/safeStorage';
+import { STATIC_MODE, MESSAGES, STORAGE_KEYS } from '@/config/staticMode';
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 4 * 1024 * 1024;
@@ -15,6 +17,7 @@ const StaffManager = ({ user }) => {
   const [staff, setStaff] = useState([]);
   const [form, setForm] = useState({ id: null, name: '', position: '', photo: '', active: true });
   const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
   const dragIndex = useRef(null);
@@ -23,10 +26,15 @@ const StaffManager = ({ user }) => {
   const isSuperadmin = user?.role === 'Superadmin';
 
   useEffect(() => {
-    const load = () => {
+    const load = async () => {
       try {
         const staffList = staffStorage.getAll();
-        setStaff(staffList || []);
+        // Resolve preview URLs from IDB
+        const withPreview = await Promise.all(staffList.map(async (s) => ({
+          ...s,
+          photoPreview: s.fileKey ? (await getBlobUrl('staff', s.fileKey)) : (s.photo || s.image || '')
+        })));
+        setStaff(withPreview || []);
       } catch (e) {
         console.error('[StaffManager] Load failed:', e);
         toast({ variant: 'destructive', title: 'Gagal memuat staff', description: e.message });
@@ -89,9 +97,8 @@ const StaffManager = ({ user }) => {
     }
     setUploading(true);
     try {
-      const dataUrl = await toDataUrl(file);
       setPhotoFile(file);
-      setForm((prev) => ({ ...prev, photo: dataUrl }));
+      setPhotoPreview(URL.createObjectURL(file));
     } catch (err) {
       toast({ variant: 'destructive', title: 'Gagal memuat foto', description: err.message || 'Coba lagi' });
     } finally {
@@ -126,28 +133,17 @@ const StaffManager = ({ user }) => {
     }
     
     try {
-      // Simulate upload and get base64 data URL
-      const uploadResult = await simulateUpload(photoFile, 'staff');
-      if (!uploadResult.success) {
-        throw new Error('Gagal memproses foto');
-      }
-      
       const staffData = {
         name: form.name.trim(),
         position: form.position.trim(),
         role: form.position.trim(),
-        photo: uploadResult.url,
-        photoUrl: uploadResult.url,
-        image: uploadResult.url,
-        active: true
+        photoFile: photoFile || null,
+        active: form.active !== false
       };
-      
-      staffStorage.add(staffData);
-      
-      // Reload from storage
-      const updatedStaff = staffStorage.getAll();
+      const created = await staffStorage.add(staffData);
+      const previewUrl = created.fileKey ? await getBlobUrl('staff', created.fileKey) : '';
+      const updatedStaff = staffStorage.getAll().map(s => s.id === created.id ? { ...created, photoPreview: previewUrl } : s);
       setStaff(updatedStaff);
-      
       toast({ title: 'Profil ditambahkan', description: MESSAGES.OPERATION_SUCCESS });
       resetForm();
     } catch (err) {
@@ -165,9 +161,11 @@ const StaffManager = ({ user }) => {
       id: item.id,
       name: item.name,
       position: item.position || item.role || '',
-      photo: item.photoUrl || item.photo || item.image || '',
+      photo: item.photoPreview || item.photo || item.image || '',
       active: item.active !== false,
     });
+    setPhotoPreview(item.photoPreview || item.photo || item.image || '');
+    setPhotoFile(null);
   };
 
   const handleDelete = (id) => {
@@ -182,13 +180,13 @@ const StaffManager = ({ user }) => {
     if (form.id === id) resetForm();
   };
 
-  const handleToggleActive = (id) => {
+  const handleToggleActive = async (id) => {
     const current = staff.find((s) => s.id === id);
     if (!current) return;
-    
-    staffStorage.update(id, { active: !current.active });
-    const updatedStaff = staffStorage.getAll();
-    setStaff(updatedStaff);
+    const updated = await staffStorage.update(id, { active: !current.active });
+    const previewUrl = updated.fileKey ? await getBlobUrl('staff', updated.fileKey) : (updated.photo || updated.image || '');
+    const nextList = staffStorage.getAll().map(s => s.id === id ? { ...updated, photoPreview: previewUrl } : s);
+    setStaff(nextList);
   };
 
   const handleDragStart = (idx) => { dragIndex.current = idx; };
@@ -209,6 +207,17 @@ const StaffManager = ({ user }) => {
     staffStorage.reorder(order);
     
     toast({ title: 'Urutan disimpan', description: 'Urutan staff diperbarui' });
+  };
+
+  const handlePublish = async () => {
+    try {
+      const published = await staffStorage.publish();
+      toast({ title: 'Publish Staff', description: MESSAGES.PUBLISH_SUCCESS });
+      // Offer JSON export for static hosting
+      exportJson('published_staff.json', published);
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Publish gagal', description: MESSAGES.OPERATION_FAILED });
+    }
   };
 
   if (!isSuperadmin) {
@@ -235,6 +244,12 @@ const StaffManager = ({ user }) => {
               Import Data Default
             </button>
           )}
+          <button
+            onClick={handlePublish}
+            className="px-4 py-2 text-sm bg-[#5D9CEC] hover:bg-[#4A89DC] text-white rounded-lg font-medium transition-colors"
+          >
+            Publish Staff
+          </button>
           <button
             onClick={resetForm}
             className="text-sm text-gray-500 hover:text-gray-700"

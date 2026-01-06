@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Trash2, Image, Loader, Pencil, GripVertical, Eye, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { db } from '@/lib/db';
-import { galleryStorage, simulateUpload } from '@/lib/staticStorage';
-import { STATIC_MODE, MESSAGES } from '@/config/staticMode';
+import { listGallery, uploadGallery, deleteGallery, reorderGallery, updateGalleryMeta } from '@/lib/galleryApi';
+import { MESSAGES } from '@/config/staticMode';
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 4 * 1024 * 1024;
@@ -16,7 +16,7 @@ const GalleryManager = ({ user }) => {
   const [uploading, setUploading] = useState(false);
   const [modalImage, setModalImage] = useState(null);
   const [renameValue, setRenameValue] = useState('');
-  const [seoFields, setSeoFields] = useState({ altText: '', seoTitle: '', description: '' });
+  const [seoFields, setSeoFields] = useState({ altText: '' });
   const fileInputRef = useRef(null);
   const dragIndex = useRef(null);
   const dragOver = useRef(null);
@@ -24,10 +24,19 @@ const GalleryManager = ({ user }) => {
   const isSuperadmin = user?.role === 'Superadmin';
 
   useEffect(() => {
-    const load = () => {
+    const load = async () => {
       try {
-        const galleryItems = galleryStorage.getAll();
-        setImages(galleryItems || []);
+        const data = await listGallery({ includeUnpublished: true, limit: 200 });
+        const items = (data.items || []).map((it) => ({
+          id: it.id,
+          filename: it.filename,
+          name: it.title,
+          altText: it.alt_text || '',
+          url: it.url,
+          is_published: it.is_published,
+          sort_order: it.sort_order,
+        }));
+        setImages(items);
       } catch (e) {
         console.error('[GalleryManager] Load failed:', e);
         toast({ variant: 'destructive', title: 'Gagal memuat galeri', description: e.message });
@@ -40,45 +49,8 @@ const GalleryManager = ({ user }) => {
   }, []);
 
   const handleImportDefaults = () => {
-    const confirmed = window.confirm('Import foto galeri default? Akan ditambahkan ke galeri yang ada.');
-    if (!confirmed) return;
-    try {
-      const existing = galleryStorage.getAll();
-      if (existing.length > 0) {
-        toast({ title: 'Import dilewati', description: 'Data default sudah pernah diimport' });
-        return;
-      }
-      
-      const defaultImage = {
-        filename: 'default-gallery.jpg',
-        name: 'Foto Default',
-        url: '/placeholder-gallery.jpg',
-        altText: 'Foto Default SMP Muhammadiyah 35 Jakarta',
-        seoTitle: 'Foto Default',
-        description: 'Foto galeri default'
-      };
-      
-      galleryStorage.add(defaultImage);
-      const updatedImages = galleryStorage.getAll();
-      setImages(updatedImages);
-      
-      toast({ title: 'Import berhasil', description: 'Ditambahkan: 1 foto' });
-    } catch (e) {
-      console.error('[GalleryManager] Import failed:', e);
-      toast({ 
-        variant: 'destructive', 
-        title: 'Import gagal', 
-        description: MESSAGES.OPERATION_FAILED 
-      });
-    }
+    // No longer needed with PHP backend
   };
-
-  const toDataUrl = (file) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (event) => resolve(event.target?.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 
   const handleFileSelect = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -98,76 +70,115 @@ const GalleryManager = ({ user }) => {
         }
 
         const baseName = file.name.replace(/\.[^.]+$/, '');
-        
-        const uploadResult = await simulateUpload(file, 'gallery');
-        if (!uploadResult.success) {
-          console.error('Upload simulation failed for:', file.name);
-          continue;
-        }
-        
-        const imageData = {
-          filename: uploadResult.filename,
-          name: baseName,
-          url: uploadResult.url,
-          altText: baseName,
-          seoTitle: baseName,
-          description: ''
-        };
-        
-        galleryStorage.add(imageData);
+        await uploadGallery({ file, title: baseName, alt: baseName });
         added += 1;
       }
 
-      const updatedImages = galleryStorage.getAll();
-      setImages(updatedImages);
+      const data = await listGallery({ includeUnpublished: true, limit: 200 });
+      const items = (data.items || []).map((it) => ({
+        id: it.id,
+        filename: it.filename,
+        name: it.title,
+        altText: it.alt_text || '',
+        url: it.url,
+        is_published: it.is_published,
+        sort_order: it.sort_order,
+      }));
+      setImages(items);
       
       if (added) toast({ title: 'Upload berhasil', description: `${added} gambar disimpan` });
     } catch (err) {
       console.error('[GalleryManager] Upload failed:', err);
-      toast({ variant: 'destructive', title: 'Upload gagal', description: MESSAGES.OPERATION_FAILED });
+      toast({ variant: 'destructive', title: 'Upload gagal', description: err.message || MESSAGES.OPERATION_FAILED });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleDeleteImage = (imageId) => {
+  const handleDeleteImage = async (imageId) => {
     const target = images.find((img) => img.id === imageId);
     if (!target) return;
     const confirmed = window.confirm('Apakah Anda yakin ingin menghapus foto ini?');
     if (!confirmed) return;
     
-    galleryStorage.delete(imageId);
-    const updatedImages = galleryStorage.getAll();
-    setImages(updatedImages);
-    
-    if (modalImage?.id === imageId) setModalImage(null);
-    toast({ title: 'Foto dihapus', description: 'Gambar sudah dihapus dari galeri' });
+    try {
+      await deleteGallery(imageId);
+      const data = await listGallery({ includeUnpublished: true, limit: 200 });
+      const items = (data.items || []).map((it) => ({
+        id: it.id,
+        filename: it.filename,
+        name: it.title,
+        altText: it.alt_text || '',
+        url: it.url,
+        is_published: it.is_published,
+        sort_order: it.sort_order,
+      }));
+      setImages(items);
+      
+      if (modalImage?.id === imageId) setModalImage(null);
+      toast({ title: 'Foto dihapus', description: 'Gambar sudah dihapus dari galeri' });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Hapus gagal', description: e.message });
+    }
   };
 
-  const handleRename = () => {
+  const handleRename = async () => {
     if (!modalImage || !renameValue.trim()) return;
     
-    const payload = {
-      name: renameValue.trim(),
-      altText: seoFields.altText.trim() || `${renameValue.trim()} SMP Muhammadiyah 35 Jakarta`,
-      seoTitle: seoFields.seoTitle.trim() || renameValue.trim(),
-      description: seoFields.description.trim()
-    };
-    
-    galleryStorage.update(modalImage.id, payload);
-    const updatedImages = galleryStorage.getAll();
-    setImages(updatedImages);
-    
-    const updatedModal = updatedImages.find(img => img.id === modalImage.id);
-    setModalImage(updatedModal || null);
-    
-    toast({ title: 'Data diperbarui', description: 'Nama dan SEO fields telah disimpan' });
+    try {
+      await updateGalleryMeta({
+        id: modalImage.id,
+        title: renameValue.trim(),
+        alt_text: seoFields.altText.trim() || `${renameValue.trim()} SMP Muhammadiyah 35 Jakarta`,
+      });
+      
+      const data = await listGallery({ includeUnpublished: true, limit: 200 });
+      const items = (data.items || []).map((it) => ({
+        id: it.id,
+        filename: it.filename,
+        name: it.title,
+        altText: it.alt_text || '',
+        url: it.url,
+        is_published: it.is_published,
+        sort_order: it.sort_order,
+      }));
+      setImages(items);
+      const updatedModal = items.find(img => img.id === modalImage.id);
+      setModalImage(updatedModal || null);
+      
+      toast({ title: 'Data diperbarui', description: 'Nama dan SEO fields telah disimpan' });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Update gagal', description: e.message });
+    }
+  };
+
+  const handlePublish = async () => {
+    try {
+      const unpublished = images.filter(i => !i.is_published);
+      for (const img of unpublished) {
+        await updateGalleryMeta({ id: img.id, title: img.name, alt_text: img.altText, is_published: 1 });
+      }
+      const data = await listGallery({ includeUnpublished: true, limit: 200 });
+      const items = (data.items || []).map((it) => ({
+        id: it.id,
+        filename: it.filename,
+        name: it.title,
+        altText: it.alt_text || '',
+        url: it.url,
+        is_published: it.is_published,
+        sort_order: it.sort_order,
+      }));
+      setImages(items);
+      toast({ title: 'Publish Galeri', description: MESSAGES.PUBLISH_SUCCESS });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Publish gagal', description: e.message });
+    }
   };
 
   const handleDragStart = (idx) => { dragIndex.current = idx; };
   const handleDragEnter = (idx) => { dragOver.current = idx; };
-  const handleDragEnd = () => {
+  const handleDragEnd = async () => {
     const from = dragIndex.current;
     const to = dragOver.current;
     dragIndex.current = null;
@@ -179,19 +190,31 @@ const GalleryManager = ({ user }) => {
     reordered.splice(to, 0, moved);
     setImages(reordered);
     
-    const order = reordered.map(i => i.id);
-    galleryStorage.reorder(order);
-    
-    toast({ title: 'Urutan disimpan', description: 'Urutan galeri diperbarui' });
+    try {
+      const order = reordered.map(i => i.id);
+      await reorderGallery(order);
+      toast({ title: 'Urutan disimpan', description: 'Urutan galeri diperbarui' });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Reorder gagal', description: e.message });
+      const data = await listGallery({ includeUnpublished: true, limit: 200 });
+      const items = (data.items || []).map((it) => ({
+        id: it.id,
+        filename: it.filename,
+        name: it.title,
+        altText: it.alt_text || '',
+        url: it.url,
+        is_published: it.is_published,
+        sort_order: it.sort_order,
+      }));
+      setImages(items);
+    }
   };
 
   const openModal = (img) => {
     setModalImage(img);
     setRenameValue(img.name || db.formatName(img.filename) || '');
     setSeoFields({
-      altText: img.altText || '',
-      seoTitle: img.seoTitle || '',
-      description: img.description || ''
+      altText: img.altText || ''
     });
   };
 
@@ -211,10 +234,10 @@ const GalleryManager = ({ user }) => {
           <p className="text-gray-600">Upload, rename, urutkan, dan kelola galeri foto sekolah.</p>
         </div>
         <button
-          onClick={handleImportDefaults}
-          className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 font-medium transition-colors"
+          onClick={handlePublish}
+          className="px-4 py-2 text-sm bg-[#5D9CEC] hover:bg-[#4A89DC] text-white rounded-lg font-medium transition-colors"
         >
-          Import Foto Default
+          Publish Galeri
         </button>
       </div>
 
@@ -287,7 +310,7 @@ const GalleryManager = ({ user }) => {
                 onDragEnd={handleDragEnd}
               >
                 <img
-                  src={img.dataUrl || img.originalUrl || img.url}
+                  src={img.url}
                   alt={img.name || img.filename}
                   onError={(e) => {
                     e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23e5e7eb" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="16" fill="%239ca3af" text-anchor="middle" dominant-baseline="middle"%3EImage not found%3C/text%3E%3C/svg%3E';
@@ -393,15 +416,7 @@ const GalleryManager = ({ user }) => {
                   <p className="text-xs text-gray-500">Format filename otomatis: slugified-title-timestamp.webp</p>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700">SEO Title</label>
-                  <input
-                    value={seoFields.seoTitle}
-                    onChange={(e) => setSeoFields(prev => ({ ...prev, seoTitle: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    placeholder="Contoh: Kegiatan Pembelajaran"
-                  />
-                </div>
+
 
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-700">Alt Text (SEO)</label>
@@ -414,16 +429,7 @@ const GalleryManager = ({ user }) => {
                   <p className="text-xs text-gray-500">Digunakan untuk atribut alt pada HTML</p>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700">Description (Opsional)</label>
-                  <textarea
-                    value={seoFields.description}
-                    onChange={(e) => setSeoFields(prev => ({ ...prev, description: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    placeholder="Deskripsi lengkap (opsional)"
-                    rows="2"
-                  />
-                </div>
+
 
                 <div className="flex items-center justify-between pt-2 gap-3">
                   <button

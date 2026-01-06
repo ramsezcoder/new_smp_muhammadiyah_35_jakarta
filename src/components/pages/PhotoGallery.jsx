@@ -12,17 +12,19 @@ const PhotoGallery = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('/api/gallery');
+        const res = await fetch('/api/gallery/list.php?published=1&limit=100');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
-        const stored = json.items || [];
+        if (!json.success) throw new Error(json.message || 'Load failed');
+        const stored = json.data?.items || [];
         if (stored.length) {
           const uploadedPhotos = stored.map((img, idx) => ({
             id: img.id || idx,
-            title: db.formatName(img.name || img.filename) || 'Dokumentasi Sekolah',
+            title: db.formatName(img.title || img.filename) || 'Dokumentasi Sekolah',
             category: img.category || 'Galeri',
             image: img.url,
-            altText: img.altText || `${img.name || 'Foto'} SMP Muhammadiyah 35 Jakarta`,
-            seoTitle: img.seoTitle || img.name || 'Dokumentasi'
+            altText: img.alt_text || `${img.title || 'Foto'} SMP Muhammadiyah 35 Jakarta`,
+            seoTitle: img.title || 'Dokumentasi'
           }));
           setPhotos(uploadedPhotos);
         } else {

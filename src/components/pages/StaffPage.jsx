@@ -4,6 +4,9 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { db } from '@/lib/db';
+import { STORAGE_KEYS } from '@/config/staticMode';
+import { safeGetItem } from '@/lib/safeStorage';
+import { getBlobUrl } from '@/lib/blobStore';
 
 const StaffPage = () => {
   const [staffMembers, setStaffMembers] = useState([]);
@@ -11,25 +14,34 @@ const StaffPage = () => {
 
   useEffect(() => {
     const load = async () => {
+      // Try public published JSON
       try {
-        const res = await fetch('/api/staff');
-        const json = await res.json();
-        const stored = (json.items || []).filter((s) => s.active !== false);
-        if (stored.length) {
-          setStaffMembers(stored.map((item, idx) => ({
+        const res = await fetch('/data/published_staff.json', { cache: 'no-cache' });
+        if (res.ok) {
+          const json = await res.json();
+          const published = Array.isArray(json) ? json : (json.items || []);
+          const resolved = await Promise.all(published.map(async (item, idx) => ({
             id: item.id || idx,
             name: item.name,
-            role: item.position || item.role || 'Staf Sekolah',
-            image: item.photoUrl || item.photo || item.image || '',
-            altText: `${item.name} - ${item.position || item.role || 'Staf'} SMP Muhammadiyah 35 Jakarta`
+            role: item.position || 'Staf Sekolah',
+            image: item.photoKey ? (await getBlobUrl('staff', item.photoKey)) : (item.url || ''),
+            altText: `${item.name} - ${item.position || 'Staf'} SMP Muhammadiyah 35 Jakarta`
           })));
-        } else {
-          setStaffMembers([]);
+          setStaffMembers(resolved.filter(s => s.name));
+          return;
         }
-      } catch (e) {
-        console.warn('[StaffPage] API load failed:', e.message);
-        setStaffMembers([]);
-      }
+      } catch {}
+
+      // Fallback to localStorage published key
+      const ls = safeGetItem(STORAGE_KEYS.STAFF_PUBLISHED, []);
+      const resolved = await Promise.all(ls.map(async (item, idx) => ({
+        id: item.id || idx,
+        name: item.name,
+        role: item.position || 'Staf Sekolah',
+        image: item.photoKey ? (await getBlobUrl('staff', item.photoKey)) : (item.url || ''),
+        altText: `${item.name} - ${item.position || 'Staf'} SMP Muhammadiyah 35 Jakarta`
+      })));
+      setStaffMembers(resolved.filter(s => s.name));
     };
     load();
   }, []);

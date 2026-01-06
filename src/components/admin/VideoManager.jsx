@@ -68,14 +68,17 @@ const VideoManager = ({ user }) => {
         thumbnail: finalThumbnail,
         category: form.category.trim() || 'Umum'
       };
-      
-      videosStorage.add(videoData);
-      
-      // Reload from storage
+
+      if (form.id) {
+        videosStorage.update(form.id, videoData);
+        toast({ title: 'Perubahan disimpan', description: MESSAGES.OPERATION_SUCCESS });
+      } else {
+        videosStorage.add(videoData);
+        toast({ title: 'Video ditambahkan', description: MESSAGES.OPERATION_SUCCESS });
+      }
+
       const updatedVideos = videosStorage.getAll();
       setVideos(updatedVideos);
-      
-      toast({ title: 'Video ditambahkan', description: MESSAGES.OPERATION_SUCCESS });
       resetForm();
     } catch (err) {
       console.error('[VideoManager] Submit failed:', err);
@@ -187,6 +190,19 @@ const VideoManager = ({ user }) => {
             className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 font-medium transition-colors"
           >
             Import Video Default
+          </button>
+          <button
+            onClick={() => {
+              try {
+                videosStorage.publish();
+                toast({ title: 'Publish Video', description: MESSAGES.PUBLISH_SUCCESS });
+              } catch (e) {
+                toast({ variant: 'destructive', title: 'Publish gagal', description: MESSAGES.OPERATION_FAILED });
+              }
+            }}
+            className="px-4 py-2 text-sm bg-[#5D9CEC] hover:bg-[#4A89DC] text-white rounded-lg font-medium transition-colors"
+          >
+            Publish Video
           </button>
           <button
             onClick={resetForm}
