@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, User, ArrowRight } from 'lucide-react';
 import { db } from '@/lib/db';
+import { fetchNewsWithFallback } from '@/lib/fetchWithFallback';
+import { MESSAGES } from '@/config/staticMode';
 
 const PAGE_SIZE = 9;
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1509062522246-3755977927d7';
@@ -90,15 +92,22 @@ const NewsListPage = ({ initialCategory = 'school', initialPage = 1, onStateChan
 
     const fetchData = async () => {
       try {
-        const response = await fetch(`/api/news/list?category=${activeTab}&page=${page}&limit=${PAGE_SIZE}`);
-        if (!response.ok) throw new Error('Failed to fetch news');
-        const data = await response.json();
+        const allNews = await fetchNewsWithFallback(activeTab, 3000);
         if (isCancelled) return;
-        setItems(data.items || []);
-        setTotalPages(data.totalPages || 1);
+        const start = (page - 1) * PAGE_SIZE;
+        const paged = allNews.slice(start, start + PAGE_SIZE);
+        setItems(paged);
+        setTotalPages(Math.max(1, Math.ceil(allNews.length / PAGE_SIZE)));
+        
+        // Check if this came from fallback by attempting API call
+        try {
+          await fetch(`/api/news/list?category=${activeTab}`, { signal: AbortSignal.timeout(2000) });
+        } catch {
+          setError(MESSAGES.FALLBACK_NEWS);
+        }
       } catch (err) {
         if (isCancelled) return;
-        setError('Gagal memuat berita, menampilkan data lokal.');
+        setError(MESSAGES.FALLBACK_NEWS);
         const all = db.getNews().filter(
           n => n.status === 'published' && (!n.channel || n.channel === activeTab)
         );

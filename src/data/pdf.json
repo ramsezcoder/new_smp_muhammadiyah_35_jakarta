@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "title": "Modul Matematika Kelas 7",
+    "fileName": "matematika-kelas-7.pdf",
+    "category": "Matematika",
+    "description": "Modul pembelajaran matematika untuk siswa kelas 7 semester 1",
+    "viewCount": 245
+  },
+  {
+    "id": 2,
+    "title": "Modul IPA Kelas 8",
+    "fileName": "ipa-kelas-8.pdf",
+    "category": "IPA",
+    "description": "Modul pembelajaran sains untuk siswa kelas 8 semester 1",
+    "viewCount": 189
+  },
+  {
+    "id": 3,
+    "title": "Modul Bahasa Indonesia Kelas 9",
+    "fileName": "bahasa-indonesia-kelas-9.pdf",
+    "category": "Bahasa",
+    "description": "Modul pembelajaran bahasa Indonesia untuk siswa kelas 9 semester 1",
+    "viewCount": 156
+  },
+  {
+    "id": 4,
+    "title": "Panduan Tata Tertib Sekolah",
+    "fileName": "tata-tertib-sekolah.pdf",
+    "category": "Informasi",
+    "description": "Panduan lengkap tata tertib dan peraturan sekolah 2025",
+    "viewCount": 312
+  },
+  {
+    "id": 5,
+    "title": "Kurikulum Merdeka 2025",
+    "fileName": "kurikulum-merdeka-2025.pdf",
+    "category": "Kurikulum",
+    "description": "Panduan implementasi kurikulum merdeka tahun akademik 2025/2026",
+    "viewCount": 428
+  }
+]

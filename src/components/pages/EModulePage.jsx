@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Eye, BookOpen, FileText, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { fetchPdfViewsWithFallback, incrementPdfViewWithFallback } from '@/lib/fetchWithFallback';
 
 const EModulePage = () => {
   const modules = [
@@ -157,12 +158,11 @@ const EModulePage = () => {
 
   const fetchViews = async () => {
     try {
-      const res = await fetch('/api/pdf/views');
-      if (!res.ok) throw new Error('Failed to load views');
-      const data = await res.json();
-      setViewCounts(data.views || {});
+      const views = await fetchPdfViewsWithFallback(3000);
+      setViewCounts(views);
     } catch (err) {
-      console.warn('[pdf] fetch views failed', err);
+      console.warn('[pdf] backend unreachable, using static mode', err);
+      // Continue silently - fallback happened in the helper
     }
   };
 
@@ -172,16 +172,27 @@ const EModulePage = () => {
 
   const incrementView = async (module) => {
     try {
-      const res = await fetch(`/api/pdf/view/${module.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: module.title })
-      });
-      if (!res.ok) throw new Error('increment failed');
-      const updated = await res.json();
-      setViewCounts((prev) => ({ ...prev, [module.id]: updated }));
+      const success = await incrementPdfViewWithFallback(module.id, module.title, 2000);
+      if (success) {
+        // Update local view count if API succeeded
+        setViewCounts((prev) => ({ 
+          ...prev, 
+          [module.id]: (prev[module.id] || 0) + 1 
+        }));
+      } else {
+        // Silently fail in static mode - just increment local count
+        setViewCounts((prev) => ({ 
+          ...prev, 
+          [module.id]: (prev[module.id] || 0) + 1 
+        }));
+      }
     } catch (err) {
-      console.warn('[pdf] increment view failed', err);
+      console.warn('[pdf] increment view failed, continuing in static mode', err);
+      // Still increment locally even if API fails
+      setViewCounts((prev) => ({ 
+        ...prev, 
+        [module.id]: (prev[module.id] || 0) + 1 
+      }));
     }
   };
 

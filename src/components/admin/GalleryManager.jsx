@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, Trash2, Image, Loader } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { MESSAGES } from '@/config/staticMode';
 
 const GalleryManager = ({ user }) => {
   const { toast } = useToast();
@@ -51,25 +52,65 @@ const GalleryManager = ({ user }) => {
 
     for (const file of files) {
       try {
+        // Try to upload to API first (with timeout)
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('adminToken', 'SuperAdmin@2025'); // Pass auth token
+        formData.append('adminToken', 'SuperAdmin@2025');
 
-        const response = await fetch('/api/upload/gallery', {
-          method: 'POST',
-          headers: {
-            'x-admin-token': 'SuperAdmin@2025'
-          },
-          body: formData
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Upload failed');
+        let uploadedFile = null;
+        
+        try {
+          const response = await fetch('/api/upload/gallery', {
+            method: 'POST',
+            headers: { 'x-admin-token': 'SuperAdmin@2025' },
+            body: formData,
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (response.ok) {
+            const { data } = await response.json();
+            uploadedFile = data;
+          }
+        } catch (apiErr) {
+          clearTimeout(timeoutId);
+          console.warn('[gallery] API upload failed, using static mode', apiErr);
         }
 
-        const { data } = await response.json();
-        uploadedFiles.push(data);
+        // If API failed, save as base64 in localStorage
+        if (!uploadedFile) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            uploadedFile = {
+              id: Date.now(),
+              filename: file.name,
+              name: file.name,
+              originalUrl: event.target.result,
+              dataUrl: event.target.result,
+              size: file.size,
+              uploadedAt: new Date().toISOString()
+            };
+            uploadedFiles.push(uploadedFile);
+            
+            // Save to localStorage
+            const newImages = [...images, uploadedFile];
+            setImages(newImages);
+            localStorage.setItem('gallery_uploads', JSON.stringify(newImages));
+            
+            toast({
+              title: 'Upload Successful',
+              description: `${file.name} saved to local storage (static mode)`
+            });
+          };
+          reader.readAsDataURL(file);
+          continue;
+        }
+
+        uploadedFiles.push(uploadedFile);
 
         toast({
           title: 'Upload Successful',
@@ -84,6 +125,7 @@ const GalleryManager = ({ user }) => {
       }
     }
 
+    // Update images state with API-uploaded files
     if (uploadedFiles.length > 0) {
       const newImages = [...images, ...uploadedFiles];
       setImages(newImages);

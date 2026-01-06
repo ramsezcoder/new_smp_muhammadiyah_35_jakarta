@@ -9,6 +9,8 @@ import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { SITE_INFO, getBreadcrumbSchema, getOrganizationSchema, getShareUrls } from '@/lib/seo-utils';
+import { fetchArticleWithFallback } from '@/lib/fetchWithFallback';
+import { MESSAGES } from '@/config/staticMode';
 
 const ArticleDetail = ({ articleId, slugParam, onBack }) => {
   const { toast } = useToast();
@@ -45,13 +47,12 @@ const ArticleDetail = ({ articleId, slugParam, onBack }) => {
       try {
         let record = null;
 
-        if (!resolvedId && resolvedSlug) {
-          const res = await fetch(`/api/news/detail/${resolvedSlug}`);
-          if (!res.ok) throw new Error('Failed to fetch news detail');
-          const payload = await res.json();
-          record = payload.record || payload.data || payload.article || payload.post || null;
+        // Try API first
+        if (resolvedSlug) {
+          record = await fetchArticleWithFallback(resolvedSlug, 3000);
         }
 
+        // Fallback to db if no record found
         if (!record) {
           record = fallbackFromDb();
         }
@@ -66,7 +67,7 @@ const ArticleDetail = ({ articleId, slugParam, onBack }) => {
         console.warn('[news] detail fetch failed', err);
         const fallback = fallbackFromDb();
         if (isMounted) {
-          setError('Gagal memuat artikel, menampilkan konten lokal.');
+          setError(MESSAGES.FALLBACK_ARTICLE);
           setArticle(fallback);
         }
       } finally {

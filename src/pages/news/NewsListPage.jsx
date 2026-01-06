@@ -7,6 +7,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { db } from '@/lib/db';
 import { SITE_INFO } from '@/lib/seo-utils';
 import { getCategoryParam, getIntParam } from '@/utils/query';
+import { fetchNewsWithFallback } from '@/lib/fetchWithFallback';
+import { MESSAGES } from '@/config/staticMode';
 
 const PAGE_SIZE = 9;
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1509062522246-3755977927d7';
@@ -106,18 +108,31 @@ const NewsListPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/news/list?category=${cat}&page=${currentPage}&limit=${PAGE_SIZE}`);
-      if (!response.ok) throw new Error('Failed to fetch news');
-      const payload = await response.json();
-      const list = payload.items || payload.data || payload.records || [];
-      const total = payload.totalPages || payload.total_pages || payload.pages || 1;
-      const current = payload.page || payload.currentPage || currentPage;
-      setItems(list);
-      setTotalPages(total);
-      setPage(current);
+      // Try to fetch from API first
+      const allNews = await fetchNewsWithFallback(cat, 3000);
+      
+      // If we got data from fallback, show the message
+      if (allNews.length > 0) {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const paged = allNews.slice(start, start + PAGE_SIZE);
+        setItems(paged);
+        setTotalPages(Math.max(1, Math.ceil(allNews.length / PAGE_SIZE)));
+        setPage(currentPage);
+        
+        // Check if this is fallback data by trying API first
+        try {
+          await fetch(`/api/news/list?category=${cat}`, { signal: AbortSignal.timeout(2000) });
+        } catch {
+          setError(MESSAGES.FALLBACK_NEWS);
+        }
+      } else {
+        throw new Error('No news available');
+      }
     } catch (err) {
-      console.warn(err);
-      setError('Gagal memuat berita, menampilkan data lokal.');
+      console.warn('[news] fetch failed:', err);
+      setError(MESSAGES.FALLBACK_NEWS);
+      
+      // Fallback to db.getNews()
       const all = db.getNews().filter(
         (n) => n.status === 'published' && (!n.channel || n.channel === cat)
       );
