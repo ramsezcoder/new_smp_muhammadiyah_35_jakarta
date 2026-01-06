@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 import RichTextEditor from './RichTextEditor';
 import { SITE_INFO } from '@/lib/seo-utils';
 import { generateArticleSEO, generateSlug, calculateCTRScore } from '@/lib/seo-engine';
+import { validateImageFile } from '@/lib/api-utils';
 
 const NewsManager = ({ user, channel }) => {
   const { toast } = useToast();
@@ -300,13 +301,10 @@ const NewsManager = ({ user, channel }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      toast({ variant: 'destructive', title: 'Format tidak didukung', description: 'Gunakan JPG, PNG, atau WebP' });
-      return;
-    }
-
-    if (file.size > MAX_IMAGE_SIZE) {
-      toast({ variant: 'destructive', title: 'File terlalu besar', description: 'Maksimal 4MB' });
+    // Use validation utility
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      toast({ variant: 'destructive', title: 'File tidak valid', description: validation.error });
       return;
     }
 
@@ -317,13 +315,40 @@ const NewsManager = ({ user, channel }) => {
       fd.append('customName', formData.featuredImageName || file.name.replace(/\.[^.]+$/, ''));
       fd.append('alt', formData.featuredImageAlt || formData.title || 'Gambar Artikel');
       fd.append('title', formData.featuredImageTitle || formData.title || 'Gambar Artikel');
-      const res = await fetch('/api/upload/featured', { method: 'POST', headers: { 'x-admin-token': 'SuperAdmin@2025' }, body: fd });
+      
+      const res = await fetch('/api/upload/featured', { 
+        method: 'POST', 
+        headers: { 'x-admin-token': 'SuperAdmin@2025' }, 
+        body: fd 
+      });
+      
+      // Check if response is HTML instead of JSON
+      const contentType = res.headers.get('content-type');
+      if (contentType && !contentType.includes('application/json')) {
+        throw new Error('Server returned invalid response. Check if backend is running.');
+      }
+      
       const json = await res.json();
-      if (!json?.success) throw new Error(json?.error || 'Upload gagal');
-      setFormData(prev => ({ ...prev, featuredImage: json.file, featuredImageAlt: json.alt, featuredImageTitle: json.title }));
-      toast({ title: 'Gambar diupload', description: 'Featured image disimpan ke server' });
+      
+      if (!json?.success) {
+        throw new Error(json?.error || 'Upload gagal');
+      }
+      
+      setFormData(prev => ({ 
+        ...prev, 
+        featuredImage: json.file, 
+        featuredImageAlt: json.alt, 
+        featuredImageTitle: json.title 
+      }));
+      
+      toast({ title: 'Gambar diupload', description: 'Featured image berhasil disimpan' });
     } catch (err) {
-      toast({ variant: 'destructive', title: 'Upload gagal', description: err.message || 'Coba lagi' });
+      console.error('[NewsManager] Featured image upload failed:', err);
+      toast({ 
+        variant: 'destructive', 
+        title: 'Upload gagal', 
+        description: err.message || 'Terjadi kesalahan saat upload. Coba lagi.' 
+      });
     } finally {
       setUploadingImage(false);
       if (featuredImageInputRef.current) featuredImageInputRef.current.value = '';

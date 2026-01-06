@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Upload, Trash2, Pencil, GripVertical, CheckCircle2, XCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { db } from '@/lib/db';
+import { apiCall, validateImageFile } from '@/lib/api-utils';
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 4 * 1024 * 1024;
@@ -22,11 +23,16 @@ const StaffManager = ({ user }) => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('/api/staff');
-        const json = await res.json();
-        setStaff(json.items || []);
+        const result = await apiCall('/api/staff');
+        if (result.success) {
+          setStaff(result.data.items || []);
+        } else {
+          throw new Error(result.error || 'Gagal memuat staff');
+        }
       } catch (e) {
+        console.error('[StaffManager] Load failed:', e);
         toast({ variant: 'destructive', title: 'Gagal memuat staff', description: e.message });
+        setStaff([]);
       }
     };
     load();
@@ -34,15 +40,37 @@ const StaffManager = ({ user }) => {
 
   const handleImportDefaults = async () => {
     try {
-      const res = await fetch('/api/staff/import-default', { method: 'POST', headers: { 'x-admin-token': 'SuperAdmin@2025' } });
-      const json = await res.json();
-      if (!json?.success) throw new Error(json?.error || 'Gagal import');
-      const r = await fetch('/api/staff');
-      const j = await r.json();
-      setStaff(j.items || []);
-      toast({ title: json.skipped ? 'Import dilewati' : 'Import berhasil', description: json.skipped ? 'Data default sudah ada' : `Ditambahkan ${json.added} profil` });
+      const result = await apiCall('/api/staff/import-default', { 
+        method: 'POST', 
+        headers: { 'x-admin-token': 'SuperAdmin@2025' } 
+      });
+      
+      if (!result.success) {
+        if (result.isNetworkError) {
+          throw new Error('Server tidak dapat dijangkau. Pastikan backend sedang berjalan.');
+        }
+        throw new Error(result.error || 'Gagal import');
+      }
+      
+      const reload = await apiCall('/api/staff');
+      if (reload.success) {
+        setStaff(reload.data.items || []);
+      }
+      
+      const skipped = result.data?.skipped;
+      const added = result.data?.added || 0;
+      
+      toast({ 
+        title: skipped ? 'Import dilewati' : 'Import berhasil', 
+        description: skipped ? 'Data default sudah pernah diimport' : `Ditambahkan ${added} profil` 
+      });
     } catch (err) {
-      toast({ variant: 'destructive', title: 'Gagal import', description: err.message });
+      console.error('[StaffManager] Import failed:', err);
+      toast({ 
+        variant: 'destructive', 
+        title: 'Gagal import', 
+        description: err.message || 'File JSON tidak valid atau tidak ditemukan.' 
+      });
     }
   };
 
@@ -84,29 +112,62 @@ const StaffManager = ({ user }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     if (!form.name.trim() || !form.position.trim()) {
       toast({ variant: 'destructive', title: 'Lengkapi data', description: 'Nama dan jabatan wajib diisi' });
       return;
     }
+    
     if (!photoFile) {
       toast({ variant: 'destructive', title: 'Foto wajib', description: 'Silakan pilih foto staff' });
       return;
     }
+    
+    // Validate file before upload
+    const validation = validateImageFile(photoFile);
+    if (!validation.valid) {
+      toast({ variant: 'destructive', title: 'File tidak valid', description: validation.error });
+      return;
+    }
+    
     try {
       const fd = new FormData();
       fd.append('file', photoFile);
       fd.append('name', form.name.trim());
       fd.append('role', form.position.trim());
-      const res = await fetch('/api/upload/staff', { method: 'POST', headers: { 'x-admin-token': 'SuperAdmin@2025' }, body: fd });
+      
+      const res = await fetch('/api/upload/staff', { 
+        method: 'POST', 
+        headers: { 'x-admin-token': 'SuperAdmin@2025' }, 
+        body: fd 
+      });
+      
+      const contentType = res.headers.get('content-type');
+      if (contentType && !contentType.includes('application/json')) {
+        throw new Error('Server returned invalid response. Check if backend is running.');
+      }
+      
       const json = await res.json();
-      if (!json?.success) throw new Error(json?.error || 'Gagal menyimpan');
-      const r = await fetch('/api/staff');
-      const j = await r.json();
-      setStaff(j.items || []);
-      toast({ title: 'Profil ditambahkan', description: 'Data staff disimpan' });
+      
+      if (!json?.success) {
+        throw new Error(json?.error || 'Gagal menyimpan');
+      }
+      
+      // Reload staff list
+      const reload = await apiCall('/api/staff');
+      if (reload.success) {
+        setStaff(reload.data.items || []);
+      }
+      
+      toast({ title: 'Profil ditambahkan', description: 'Data staff berhasil disimpan' });
       resetForm();
     } catch (err) {
-      toast({ variant: 'destructive', title: 'Gagal menyimpan', description: err.message });
+      console.error('[StaffManager] Submit failed:', err);
+      toast({ 
+        variant: 'destructive', 
+        title: 'Gagal menyimpan', 
+        description: err.message || 'Terjadi kesalahan saat menyimpan data' 
+      });
     }
   };
 

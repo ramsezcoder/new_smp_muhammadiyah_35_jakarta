@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Trash2, Image, Loader, Pencil, GripVertical, Eye, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { db } from '@/lib/db';
+import { apiCall } from '@/lib/api-utils';
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 4 * 1024 * 1024;
@@ -24,11 +25,16 @@ const GalleryManager = ({ user }) => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('/api/gallery');
-        const json = await res.json();
-        setImages(json.items || []);
+        const result = await apiCall('/api/gallery');
+        if (result.success) {
+          setImages(result.data.items || []);
+        } else {
+          throw new Error(result.error || 'Gagal memuat galeri');
+        }
       } catch (e) {
+        console.error('[GalleryManager] Load failed:', e);
         toast({ variant: 'destructive', title: 'Gagal memuat galeri', description: e.message });
+        setImages([]);
       } finally {
         setLoading(false);
       }
@@ -40,14 +46,37 @@ const GalleryManager = ({ user }) => {
     const confirmed = window.confirm('Import foto galeri default? Akan ditambahkan ke galeri yang ada.');
     if (!confirmed) return;
     try {
-      const res = await fetch('/api/gallery/import-default', { method: 'POST' });
-      const json = await res.json();
-      const r = await fetch('/api/gallery');
-      const j = await r.json();
-      setImages(j.items || []);
-      toast({ title: 'Import berhasil', description: `Ditambahkan: ${json.added || 0} foto` });
+      const result = await apiCall('/api/gallery/import-default', { 
+        method: 'POST',
+        headers: { 'x-admin-token': 'SuperAdmin@2025' }
+      });
+      
+      if (!result.success) {
+        if (result.isNetworkError) {
+          throw new Error('Server tidak dapat dijangkau. Pastikan backend sedang berjalan.');
+        }
+        throw new Error(result.error || 'Import gagal');
+      }
+      
+      const reload = await apiCall('/api/gallery');
+      if (reload.success) {
+        setImages(reload.data.items || []);
+      }
+      
+      const added = result.data?.added || 0;
+      const skipped = result.data?.skipped;
+      
+      toast({ 
+        title: skipped ? 'Import dilewati' : 'Import berhasil', 
+        description: skipped ? 'Data default sudah pernah diimport' : `Ditambahkan: ${added} foto` 
+      });
     } catch (e) {
-      toast({ variant: 'destructive', title: 'Import gagal', description: e.message });
+      console.error('[GalleryManager] Import failed:', e);
+      toast({ 
+        variant: 'destructive', 
+        title: 'Import gagal', 
+        description: e.message || 'File JSON tidak valid atau tidak ditemukan.' 
+      });
     }
   };
 
