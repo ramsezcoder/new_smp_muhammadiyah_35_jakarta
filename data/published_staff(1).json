@@ -1,0 +1,20 @@
+[
+    {
+        "id": 2,
+        "name": "M. Mabrur Riyamasey Mas'ud, S.Kom., S.H.",
+        "role": "Staff Tata Usaha",
+        "photo_url": "/uploads/staff/m-mabrur-riyamasey-mas-ud-s-kom-s-h.jpg"
+    },
+    {
+        "id": 3,
+        "name": "aSD",
+        "role": "ASD",
+        "photo_url": "/uploads/staff/asd.jpg"
+    },
+    {
+        "id": 4,
+        "name": "ass",
+        "role": "sss",
+        "photo_url": "/uploads/staff/ass.webp"
+    }
+]

@@ -1,0 +1,50 @@
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated @babel/plugin-proposal-numeric-separator@7.18.6: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-numeric-separator instead.
+npm warn deprecated @babel/plugin-proposal-nullish-coalescing-operator@7.18.6: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-nullish-coalescing-operator instead.
+npm warn deprecated @babel/plugin-proposal-private-methods@7.18.6: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-private-methods instead.
+npm warn deprecated @babel/plugin-proposal-class-properties@7.18.6: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-class-properties instead.
+npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated @babel/plugin-proposal-optional-chaining@7.21.0: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-optional-chaining instead.
+npm warn deprecated @babel/plugin-proposal-private-property-in-object@7.21.11: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-private-property-in-object instead.
+npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+
+added 593 packages, and audited 594 packages in 6s
+
+142 packages are looking for funding
+  run `npm fund` for details
+
+2 moderate severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+> web-app@0.0.0 build
+> vite build
+
+vite v4.5.14 building for production...
+transforming...
+✓ 2034 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                                 1.55 kB │ gzip:   0.72 kB
+dist/assets/STREAM-0703b14a.png                                83.43 kB
+dist/assets/INTERNATIONAL_ENGLISH_SYLLABUS-462714a1.png        92.12 kB
+dist/assets/EXTRACURRICULAR-914c1bfb.png                      129.82 kB
+dist/assets/TAHFIDZ_DAN_TAHSIN-d6528d66.png                   140.49 kB
+dist/assets/STUDENT_EXCHANGE-eca52ee2.png                     161.55 kB
+dist/assets/BERBASIS_LMS-2bb65aa3.png                         237.05 kB
+dist/assets/FLYER 2026 2027-bb26e87a.jpg                    2,283.36 kB
+dist/assets/BROSUR_SMP_MUH_35_SPMB_2026_2027-910c6ef2.pdf  15,507.18 kB
+dist/assets/index-fde1d65a.css                                 60.79 kB │ gzip:  10.13 kB
+dist/assets/index-7bcc41fc.js                                 771.51 kB │ gzip: 214.27 kB
+
+(!) Some chunks are larger than 500 kBs after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.51s

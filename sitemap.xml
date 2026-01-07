@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Home Page -->
+  <url>
+    <loc>https://smpmuh35jakarta.sch.id/</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  
+  <!-- News Section -->
+  <url>
+    <loc>https://smpmuh35jakarta.sch.id/#news</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
+  <!-- PPDB/Registration -->
+  <url>
+    <loc>https://smpmuh35jakarta.sch.id/#registration</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  
+  <!-- Gallery -->
+  <url>
+    <loc>https://smpmuh35jakarta.sch.id/#gallery</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Facilities -->
+  <url>
+    <loc>https://smpmuh35jakarta.sch.id/#facilities</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Welcome/About -->
+  <url>
+    <loc>https://smpmuh35jakarta.sch.id/#welcome</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <!-- Achievements -->
+  <url>
+    <loc>https://smpmuh35jakarta.sch.id/#achievements</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Online Portal -->
+  <url>
+    <loc>https://smpmuh35jakarta.sch.id/#online</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <!-- Programs -->
+  <url>
+    <loc>https://smpmuh35jakarta.sch.id/#programs</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>

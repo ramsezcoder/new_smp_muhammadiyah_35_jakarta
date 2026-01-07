@@ -1,50 +1,38 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { db } from '@/lib/db';
-import { STORAGE_KEYS } from '@/config/staticMode';
-import { safeGetItem } from '@/lib/safeStorage';
-import { getBlobUrl } from '@/lib/blobStore';
+
+// HARDCODED STATIC STAFF LIST - NO JSON - NO FETCH - NO LOCALSTORAGE
+const STAFF_MEMBERS = [
+  { id: 1, name: 'Risyanti Khamidah, S.Pd', role: 'Kepala Sekolah' },
+  { id: 2, name: 'Alwi Jamalulail, S.Pd.I', role: 'Wakasek Kurikulum' },
+  { id: 3, name: 'Arista Saptarini, S.Pd', role: 'Wakasek Kesiswaan' },
+  { id: 4, name: 'Sofia Mar\'atussholiha, S.Pd', role: 'Bahasa Indonesia' },
+  { id: 5, name: 'Olivia Priyandarweni, S.Pd', role: 'PKn & IPS' },
+  { id: 6, name: 'Kiki Komalia, M.Pd', role: 'Matematika' },
+  { id: 7, name: 'Sidik Purnomo, M.Pd', role: 'Tahsin & Tahfidz Al-Qur\'an' },
+  { id: 8, name: 'Aulia Abdurrahman, S.Pd', role: 'Tahsin & Tahfidz Al-Qur\'an' },
+  { id: 9, name: 'Hadi Jabbar hasan A, S.Pd', role: 'Pendidikan Agama Islam' },
+  { id: 10, name: 'Abu Amar, S.Pd', role: 'PJOK' },
+  { id: 11, name: 'Amerza Munandar, S.Kom', role: 'Informatika' },
+  { id: 12, name: 'Nurit Said, S.Pd', role: 'Seni Musik' },
+  { id: 13, name: 'Desi Nurlaelasari, S.Pd', role: 'IPA & Matematika' },
+  { id: 14, name: 'Nurkumalasari, S.Pd', role: 'Bahasa Inggris' },
+  { id: 15, name: 'Dian Nastiti Deserita, AP', role: 'LPK' },
+  { id: 16, name: 'Darsono Rian Pribadi', role: 'Kepala Tata Usaha' },
+  { id: 17, name: 'Eko Budi Sartono', role: 'Bendahara' },
+  { id: 18, name: 'M. Mabrur Riyamasey Mas\'ud, S.Kom., S.H.', role: 'Staff Tata Usaha' },
+  { id: 19, name: 'Hadi Prawoto', role: 'Pramubakti' },
+  { id: 20, name: 'Ahmad Furqon', role: 'Pramubakti' }
+];
 
 const StaffPage = () => {
-  const [staffMembers, setStaffMembers] = useState([]);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const load = async () => {
-      // Try public published JSON
-      try {
-        const res = await fetch('/data/published_staff.json', { cache: 'no-cache' });
-        if (res.ok) {
-          const json = await res.json();
-          const published = Array.isArray(json) ? json : (json.items || []);
-          const resolved = await Promise.all(published.map(async (item, idx) => ({
-            id: item.id || idx,
-            name: item.name,
-            role: item.position || 'Staf Sekolah',
-            image: item.photoKey ? (await getBlobUrl('staff', item.photoKey)) : (item.url || ''),
-            altText: `${item.name} - ${item.position || 'Staf'} SMP Muhammadiyah 35 Jakarta`
-          })));
-          setStaffMembers(resolved.filter(s => s.name));
-          return;
-        }
-      } catch {}
-
-      // Fallback to localStorage published key
-      const ls = safeGetItem(STORAGE_KEYS.STAFF_PUBLISHED, []);
-      const resolved = await Promise.all(ls.map(async (item, idx) => ({
-        id: item.id || idx,
-        name: item.name,
-        role: item.position || 'Staf Sekolah',
-        image: item.photoKey ? (await getBlobUrl('staff', item.photoKey)) : (item.url || ''),
-        altText: `${item.name} - ${item.position || 'Staf'} SMP Muhammadiyah 35 Jakarta`
-      })));
-      setStaffMembers(resolved.filter(s => s.name));
-    };
-    load();
-  }, []);
+  
+  console.log('✅ STAFF PAGE LOADED - STATIC MODE');
+  console.log('✅ Staff count:', STAFF_MEMBERS.length);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E8F4F8] to-white pt-24 pb-20">
@@ -78,46 +66,32 @@ const StaffPage = () => {
           </p>
         </motion.div>
 
-        {/* Staff Grid */}
-        {staffMembers.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-16 text-center">
-            <p className="text-gray-600 text-lg mb-2">Belum ada data guru & karyawan yang ditambahkan.</p>
-            <p className="text-gray-400 text-sm">Admin dapat mengelola data staff dari dashboard.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-            {staffMembers.map((staff, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group hover:-translate-y-2"
-              >
-                <div className="aspect-square overflow-hidden bg-gradient-to-br from-[#D4E8F0] to-[#E8F4F8]">
-                  <img 
-                    src={staff.image}
-                    alt={staff.altText || staff.name}
-                    title={`${staff.name} - ${staff.role}`}
-                    loading="lazy"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    onError={(e) => {
-                      e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23e5e7eb" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="16" fill="%239ca3af" text-anchor="middle" dominant-baseline="middle"%3EImage not available%3C/text%3E%3C/svg%3E';
-                    }}
-                  />
+        {/* Staff Grid - ALWAYS SHOW */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+          {STAFF_MEMBERS.map((staff, index) => (
+            <motion.div
+              key={staff.id}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.05 }}
+              className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group hover:-translate-y-2"
+            >
+              <div className="aspect-square overflow-hidden bg-gradient-to-br from-[#D4E8F0] to-[#E8F4F8] flex items-center justify-center">
+                <div className="text-gray-400 text-6xl font-light">
+                  {staff.name.charAt(0)}
                 </div>
-                <div className="p-5 text-center">
-                  <h3 className="font-poppins font-bold text-gray-800 text-lg mb-2">
-                    {staff.name}
-                  </h3>
-                  <span className="inline-block px-4 py-1 bg-[#E8F4F8] text-[#5D9CEC] rounded-full text-sm font-medium">
-                    {staff.role}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+              </div>
+              <div className="p-5 text-center">
+                <h3 className="font-poppins font-bold text-gray-800 text-lg mb-2">
+                  {staff.name}
+                </h3>
+                <span className="inline-block px-4 py-1 bg-[#E8F4F8] text-[#5D9CEC] rounded-full text-sm font-medium">
+                  {staff.role}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </div>
   );

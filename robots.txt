@@ -1,0 +1,13 @@
+# robots.txt for SMP Muhammadiyah 35 Jakarta
+User-agent: *
+Allow: /
+
+# Disallow admin pages
+Disallow: /admin
+Disallow: /#admin
+
+# Sitemap
+Sitemap: https://smpmuh35jakarta.sch.id/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1

@@ -4,6 +4,7 @@ import { Upload, Trash2, Pencil, GripVertical, CheckCircle2, XCircle } from 'luc
 import { useToast } from '@/components/ui/use-toast';
 import { validateImageFile } from '@/lib/api-utils';
 import { listStaff, createStaff, updateStaff, deleteStaff, reorderStaff } from '@/lib/staffApi';
+import { staffStorage } from '@/lib/staticStorage';
 import { MESSAGES } from '@/config/staticMode';
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];

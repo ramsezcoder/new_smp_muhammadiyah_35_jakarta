@@ -11,3 +11,6 @@ public/api/config.local.php
 # Uploaded files
 public/uploads/*
 !public/uploads/.htaccess
+
+
+.vscode/sftp.json

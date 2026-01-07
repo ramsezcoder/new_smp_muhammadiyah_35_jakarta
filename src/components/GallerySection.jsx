@@ -10,7 +10,7 @@ const GallerySection = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('/api/gallery');
+        const res = await fetch('/api/gallery/list.php?published=1&limit=6');
         const json = await res.json();
         const stored = json.items || [];
         if (stored.length) {

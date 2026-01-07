@@ -1,0 +1,105 @@
+-- Schema for SMP Muh 35 CMS (PHP backend)
+
+CREATE TABLE IF NOT EXISTS gallery_images (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  alt_text VARCHAR(255) DEFAULT '' NOT NULL,
+  filename VARCHAR(255) NOT NULL,
+  sort_order INT UNSIGNED NOT NULL DEFAULT 0,
+  is_published TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_sort (sort_order),
+  INDEX idx_published (is_published)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS staff (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  role VARCHAR(255) NOT NULL DEFAULT '',
+  photo_filename VARCHAR(255) DEFAULT NULL,
+  bio TEXT,
+  sort_order INT UNSIGNED NOT NULL DEFAULT 0,
+  is_published TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_staff_sort (sort_order),
+  INDEX idx_staff_pub (is_published)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS videos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  youtube_id VARCHAR(32) NOT NULL,
+  thumbnail_url VARCHAR(255) DEFAULT NULL,
+  description TEXT,
+  sort_order INT UNSIGNED NOT NULL DEFAULT 0,
+  is_published TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_yt (youtube_id),
+  INDEX idx_videos_sort (sort_order),
+  INDEX idx_videos_pub (is_published)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS articles (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) NOT NULL,
+  content_html MEDIUMTEXT NOT NULL,
+  excerpt TEXT DEFAULT NULL,
+  featured_image VARCHAR(255) DEFAULT NULL,
+  featured_image_alt VARCHAR(255) DEFAULT NULL,
+  category VARCHAR(100) DEFAULT NULL,
+  tags_json VARCHAR(500) DEFAULT NULL,
+  status ENUM('draft','pending','published','archived') NOT NULL DEFAULT 'draft',
+  seo_title VARCHAR(255) DEFAULT NULL,
+  seo_description VARCHAR(255) DEFAULT NULL,
+  og_image VARCHAR(255) DEFAULT NULL,
+  author_id INT UNSIGNED DEFAULT NULL,
+  author_name VARCHAR(255) DEFAULT NULL,
+  sort_order INT UNSIGNED NOT NULL DEFAULT 0,
+  published_at DATETIME DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_slug (slug),
+  INDEX idx_status (status),
+  INDEX idx_published_at (published_at),
+  INDEX idx_sort (sort_order),
+  INDEX idx_category (category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Users table for admin authentication
+CREATE TABLE IF NOT EXISTS users (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('Superadmin','Admin','Author') NOT NULL DEFAULT 'Admin',
+  status ENUM('active','disabled') NOT NULL DEFAULT 'active',
+  last_login DATETIME DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Sessions table for token management
+CREATE TABLE IF NOT EXISTS sessions (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  session_token VARCHAR(500) NOT NULL,
+  user_agent VARCHAR(500) DEFAULT NULL,
+  ip_address VARCHAR(45) DEFAULT NULL,
+  expires_at DATETIME NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_token (session_token),
+  INDEX idx_user_id (user_id),
+  INDEX idx_expires (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Settings key/value storage
+CREATE TABLE IF NOT EXISTS settings (
+  `key` VARCHAR(100) PRIMARY KEY,
+  `value` TEXT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
