@@ -9,61 +9,143 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 // Auth: only Admin/Author/Superadmin can create
 $user = require_auth($config, ['Admin','Author','Superadmin']);
 
+// ---------- INPUT PARSING ----------
 $title = trim((string)($_POST['title'] ?? ''));
 $slug = trim((string)($_POST['slug'] ?? ''));
 $content = trim((string)($_POST['content'] ?? ''));
 $excerpt = trim((string)($_POST['excerpt'] ?? ''));
 $category = trim((string)($_POST['category'] ?? ''));
-$tags = isset($_POST['tags']) ? json_encode((array)json_decode($_POST['tags'], true)) : '[]';
 $status = trim((string)($_POST['status'] ?? 'draft'));
 $seoTitle = trim((string)($_POST['seo_title'] ?? ''));
 $seoDescription = trim((string)($_POST['seo_description'] ?? ''));
 $featuredImageAlt = trim((string)($_POST['featured_image_alt'] ?? ''));
 
+// ---------- VALIDATION ----------
 if ($title === '' || $content === '') {
   respond(false, 'Title and content required', [], 400);
 }
 
-// Validate slug format
+// ---------- SLUG ----------
 if ($slug === '') {
   $slug = strtolower(trim(preg_replace('/[^a-z0-9\-]+/i', '-', $title), '-'));
 }
 $slug = preg_replace('/[^a-z0-9\-]/i', '', $slug) ?: 'article-' . time();
 
+// ---------- TAGS HANDLING (HARD FIX) ----------
+$tagsRaw = $_POST['tags'] ?? '[]';
+$tagsDecoded = json_decode($tagsRaw, true);
+$tags = is_array($tagsDecoded) ? json_encode($tagsDecoded, JSON_UNESCAPED_UNICODE) : '[]';
+
+// ---------- NORMALISE EMPTY VALUES ----------
+$category = $category !== '' ? $category : null;
+$featuredImageAlt = $featuredImageAlt !== '' ? $featuredImageAlt : null;
+$seoTitle = $seoTitle !== '' ? $seoTitle : null;
+$seoDescription = $seoDescription !== '' ? $seoDescription : null;
+
+// ---------- IMAGE UPLOAD ----------
 $featuredImage = null;
-if (isset($_FILES['featured_image']) && $_FILES['featured_image']['error'] === UPLOAD_ERR_OK) {
+
+if (
+  isset($_FILES['featured_image']) &&
+  $_FILES['featured_image']['error'] === UPLOAD_ERR_OK
+) {
   $check = validate_image_upload($_FILES['featured_image']);
   if (!$check['ok']) {
     respond(false, $check['error'], [], 400);
   }
+
   $pathinfo = pathinfo($_FILES['featured_image']['name']);
   $ext = strtolower($pathinfo['extension'] ?? 'jpg');
   $baseSlug = slugify($title);
-  [$featuredImage, $target] = unique_filename($config['uploads']['articles'], $baseSlug, $ext);
+
+  [$featuredImage, $target] = unique_filename(
+    $config['uploads']['articles'],
+    $baseSlug,
+    $ext
+  );
+
   if (!move_uploaded_file($_FILES['featured_image']['tmp_name'], $target)) {
     respond(false, 'Failed to save featured image', [], 500);
   }
 }
 
+// ---------- DB OPERATION ----------
 try {
   $pdo->beginTransaction();
-  $maxSort = (int)$pdo->query('SELECT IFNULL(MAX(sort_order), 0) FROM articles')->fetchColumn();
-  $publishedAt = ($status === 'published') ? date('Y-m-d H:i:s') : null;
-  
-  $stmt = $pdo->prepare('INSERT INTO articles (title, slug, content_html, excerpt, featured_image, featured_image_alt, category, tags_json, status, seo_title, seo_description, author_id, author_name, sort_order, published_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-  $stmt->execute([$title, $slug, $content, $excerpt, $featuredImage, $featuredImageAlt, $category, $tags, $status, $seoTitle, $seoDescription, $user['sub'], $user['name'] ?? 'Unknown', $maxSort + 1, $publishedAt]);
+
+  $maxSort = (int)$pdo
+    ->query('SELECT IFNULL(MAX(sort_order), 0) FROM articles')
+    ->fetchColumn();
+
+  $publishedAt = ($status === 'published')
+    ? date('Y-m-d H:i:s')
+    : null;
+
+  $stmt = $pdo->prepare(
+    'INSERT INTO articles (
+      title,
+      slug,
+      content_html,
+      excerpt,
+      featured_image,
+      featured_image_alt,
+      category,
+      tags_json,
+      status,
+      seo_title,
+      seo_description,
+      author_id,
+      author_name,
+      sort_order,
+      published_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  );
+
+  $stmt->execute([
+    $title,
+    $slug,
+    $content,
+    $excerpt !== '' ? $excerpt : null,
+    $featuredImage ?: null,
+    $featuredImageAlt,
+    $category,
+    $tags,
+    $status,
+    $seoTitle,
+    $seoDescription,
+    $user['sub'],
+    $user['name'] ?? 'Unknown',
+    $maxSort + 1,
+    $publishedAt
+  ]);
+
   $id = (int)$pdo->lastInsertId();
+
   $pdo->commit();
-  
+
   respond(true, 'Article created', [
     'id' => $id,
     'slug' => $slug,
     'featured_image' => $featuredImage,
-    'featured_image_url' => $featuredImage ? '/uploads/articles/' . $featuredImage : null,
+    'featured_image_url' =>
+      $featuredImage ? '/uploads/articles/' . $featuredImage : null,
     'featured_image_alt' => $featuredImageAlt
   ]);
+
 } catch (Throwable $e) {
-  if ($pdo->inTransaction()) { $pdo->rollBack(); }
-  if ($featuredImage) @unlink($config['uploads']['articles'] . DIRECTORY_SEPARATOR . $featuredImage);
-  respond(false, 'Create failed', ['error' => $e->getMessage()], 500);
+
+  if ($pdo->inTransaction()) {
+    $pdo->rollBack();
+  }
+
+  if ($featuredImage) {
+    @unlink($config['uploads']['articles'] . DIRECTORY_SEPARATOR . $featuredImage);
+  }
+
+  error_log("ARTICLE CREATE ERROR: " . $e->getMessage());
+
+  respond(false, 'Create failed', [
+    'error' => $e->getMessage()
+  ], 500);
 }
