@@ -33,25 +33,49 @@ $pdo->exec('CREATE TABLE IF NOT EXISTS articles (
 $page = max(1, (int)($_GET['page'] ?? 1));
 $limit = min(100, max(1, (int)($_GET['limit'] ?? 20)));
 $offset = ($page - 1) * $limit;
-$status = trim((string)($_GET['status'] ?? 'published'));
+$statusParam = trim((string)($_GET['status'] ?? 'published'));
+
+// Validate status parameter
+$allowedStatuses = ['all', 'draft', 'pending', 'published', 'archived'];
+$status = in_array($statusParam, $allowedStatuses, true) ? $statusParam : 'published';
 $publishedOnly = $status === 'published';
 
-$where = $publishedOnly ? 'WHERE status = "published"' : '';
+$where = $publishedOnly ? 'WHERE status = "published"' : ($status === 'all' ? '' : 'WHERE status = ?');
 
 try {
-  $total = (int)$pdo->query("SELECT COUNT(*) FROM articles " . ($publishedOnly ? "WHERE status = 'published'" : ""))->fetchColumn();
-  $stmt = $pdo->prepare("SELECT id, title, slug, excerpt, featured_image, featured_image_alt, category, tags_json, status, seo_title, seo_description, author_name, published_at, created_at
-                         FROM articles $where ORDER BY sort_order DESC, published_at DESC, id DESC LIMIT :limit OFFSET :offset");
+  // Get total count
+  if ($status === 'all') {
+    $total = (int)$pdo->query("SELECT COUNT(*) FROM articles")->fetchColumn();
+  } elseif ($publishedOnly) {
+    $total = (int)$pdo->query("SELECT COUNT(*) FROM articles WHERE status = 'published'")->fetchColumn();
+  } else {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM articles WHERE status = ?");
+    $stmt->execute([$status]);
+    $total = (int)$stmt->fetchColumn();
+  }
+  
+  // Get items
+  $sql = "SELECT id, title, slug, excerpt, featured_image, featured_image_alt, category, tags_json, status, seo_title, seo_description, author_name, published_at, created_at
+          FROM articles $where ORDER BY sort_order DESC, published_at DESC, id DESC LIMIT :limit OFFSET :offset";
+  $stmt = $pdo->prepare($sql);
+  if (!$publishedOnly && $status !== 'all') {
+    $stmt->bindValue(1, $status, PDO::PARAM_STR);
+  }
   $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
   $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
   $stmt->execute();
-  $items = $stmt->fetchAll();
+  $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
   
   $baseUrl = '/uploads/articles';
   foreach ($items as &$it) {
     $it['featured_image_url'] = $it['featured_image'] ? $baseUrl . '/' . $it['featured_image'] : null;
-    $it['tags'] = $it['tags_json'] ? json_decode($it['tags_json'], true) : [];
+    $it['tags'] = [];
+    if (!empty($it['tags_json'])) {
+      $decoded = json_decode($it['tags_json'], true);
+      $it['tags'] = is_array($decoded) ? $decoded : [];
+    }
   }
+  unset($it);
   
   respond(true, '', [
     'items' => $items,
@@ -63,5 +87,6 @@ try {
     ]
   ]);
 } catch (Throwable $e) {
+  error_log("Articles list.php error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
   respond(false, 'Failed to list articles', ['error' => $e->getMessage()], 500);
 }

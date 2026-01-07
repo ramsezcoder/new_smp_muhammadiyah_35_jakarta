@@ -226,6 +226,7 @@ const NewsManager = ({ user, channel }) => {
               <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
               <input
                 type="text"
+                dir="ltr"
                 value={formData.title}
                 onChange={e => setFormData({...formData, title: e.target.value})}
                 className="w-full text-xl font-bold p-3 border-b-2 border-gray-100 focus:border-[#5D9CEC] outline-none transition-colors"
@@ -346,6 +347,7 @@ const NewsManager = ({ user, channel }) => {
                   <label className="block text-xs font-medium text-gray-500 mb-1">SEO Title</label>
                   <input
                     type="text"
+                    dir="ltr"
                     value={seoData.seoTitle}
                     onChange={e => setSeoData({...seoData, seoTitle: e.target.value})}
                     className="w-full p-2 border rounded-lg text-sm"
@@ -356,6 +358,7 @@ const NewsManager = ({ user, channel }) => {
                   <label className="block text-xs font-medium text-gray-500 mb-1">Slug</label>
                   <input
                     type="text"
+                    dir="ltr"
                     value={seoData.slug}
                     onChange={e => setSeoData({...seoData, slug: sanitizeSlug(e.target.value)})}
                     className="w-full p-2 border rounded-lg text-sm"
@@ -397,7 +400,8 @@ const NewsManager = ({ user, channel }) => {
            <div className="relative flex-1 max-w-sm">
              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
              <input 
-               type="text" 
+               type="text"
+               dir="ltr"
                placeholder="Search articles..." 
                className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 focus:border-[#5D9CEC] outline-none text-sm"
                value={filter}
