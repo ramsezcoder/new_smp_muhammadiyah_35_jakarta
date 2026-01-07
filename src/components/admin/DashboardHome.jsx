@@ -12,17 +12,21 @@ const DashboardHome = ({ user }) => {
   });
 
   useEffect(() => {
-    const news = db.getNews();
-    const regs = db.getRegistrants();
-    const logs = db.getLogs();
-    
-    setStats({
-      articles: news.length,
-      pending: news.filter(n => n.status === 'pending').length,
-      registrants: regs.length,
-      registrantsNew: regs.filter(r => r.status === 'new').length,
-      logs: logs.slice(0, 5)
-    });
+    (async () => {
+      const news = db.getNews();
+      const regs = await db.getRegistrants();
+      const logs = db.getLogs();
+
+      const regsArray = Array.isArray(regs) ? regs : [];
+
+      setStats({
+        articles: news.length,
+        pending: news.filter(n => n.status === 'pending').length,
+        registrants: regsArray.length,
+        registrantsNew: regsArray.filter(r => r.status === 'new').length,
+        logs: logs.slice(0, 5)
+      });
+    })();
   }, []);
 
   const StatCard = ({ label, value, icon: Icon, color, subLabel, subColor }) => (
