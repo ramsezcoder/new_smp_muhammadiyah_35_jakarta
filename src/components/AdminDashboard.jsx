@@ -127,21 +127,26 @@ const AdminDashboard = ({ onLogout }) => {
         </div>
 
         <nav className="p-4 space-y-1 flex-1 overflow-y-auto custom-scrollbar">
-          {menuItems.filter(item => item.roles.includes(user.role)).map(item => (
-            <button
-              key={item.id}
-              onClick={() => { setActiveTab(item.id); if(window.innerWidth < 1024) setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all whitespace-nowrap ${
-                activeTab === item.id 
-                  ? 'bg-[#E8F4F8] text-[#5D9CEC] font-medium shadow-sm' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-            >
-              <item.icon size={20} />
-              {item.label}
-            </button>
-          ))}
-        </nav>
+  {(Array.isArray(menuItems) ? menuItems : [])
+    .filter(item => Array.isArray(item.roles) && item.roles.includes(user?.role))
+    .map(item => (
+      <button
+        key={item.id}
+        onClick={() => { 
+          setActiveTab(item.id); 
+          if (window.innerWidth < 1024) setSidebarOpen(false);
+        }}
+        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all whitespace-nowrap ${
+          activeTab === item.id 
+            ? 'bg-[#E8F4F8] text-[#5D9CEC] font-medium shadow-sm' 
+            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+        }`}
+      >
+        <item.icon size={20} />
+        {item.label}
+      </button>
+    ))}
+</nav>
 
         <div className="p-4 border-t border-gray-100 bg-gray-50/50">
           <button 

@@ -5,42 +5,50 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 // Import staff photos
-import AbuPhoto from '@/assets/abu.jpeg';
-import AhmadPhoto from '@/assets/ahmad.jpeg';
-import AmerzaPhoto from '@/assets/amerza.jpeg';
-import AuliaPhoto from '@/assets/aulia.jpeg';
-import EkoPhoto from '@/assets/eko.jpeg';
-import HadiJabbarPhoto from '@/assets/hadi_jabbar.jpeg';
-import HadiPrawotoPhoto from '@/assets/hadi_prawoto.jpeg';
-import RianDarsonoPhoto from '@/assets/rian_darsono.jpeg';
-import OliviaPhoto from '@/assets/olivia.jpg';
-import MabrurPhoto from '@/assets/mabrur.jpg';
+import AbuPhoto from '@/assets/abu.png';
+import AhmadPhoto from '@/assets/ahmad.png';
+import AmerzaPhoto from '@/assets/amerza.png';
+import AuliaPhoto from '@/assets/aulia.png';
+import EkoPhoto from '@/assets/eko.png';
+import HadiJabbarPhoto from '@/assets/hadi_jabbar.png';
+import HadiPrawotoPhoto from '@/assets/hadi_prawoto.png';
+import RianDarsonoPhoto from '@/assets/rian_darsono.png';
+import OliviaPhoto from '@/assets/olivia.png';
+import MabrurPhoto from '@/assets/mabrur.png';
+import NuritoPhoto from '@/assets/nurito.png';
+import SidikPhoto from '@/assets/sidik.png';
+import NisaPhoto from '@/assets/nisa.png';
+import DianPhoto from '@/assets/dian.png';
+import AristaPhoto from '@/assets/arista.png';
+import AlwiPhoto from '@/assets/alwi.png';
+import KikiPhoto from '@/assets/kiki.png';
 
 // HARDCODED STATIC STAFF LIST - NO JSON/LOCALSTORAGE
 const STAFF_MEMBERS = [
   { id: 1, name: 'Risyanti Khamidah, S.Pd', role: 'Kepala Sekolah', image: null },
-  { id: 2, name: 'Alwi Jamalulail, S.Pd.I', role: 'Wakasek Kurikulum', image: null },
-  { id: 3, name: 'Arista Saptarini, S.Pd', role: 'Wakasek Kesiswaan', image: null },
+  { id: 2, name: 'Alwi Jamalullail, S.Pd.I', role: 'Wakasek Kurikulum', image: AlwiPhoto },
+  { id: 3, name: 'Arista Saptarini, S.Pd', role: 'Wakasek Kesiswaan', image: AristaPhoto },
   { id: 4, name: 'Sofia Mar\'atussholiha, S.Pd', role: 'Bahasa Indonesia', image: null },
   { id: 5, name: 'Olivia Priyandarweni, S.Pd', role: 'PKn & IPS', image: OliviaPhoto },
-  { id: 6, name: 'Kiki Komalia, M.Pd', role: 'Matematika', image: null },
-  { id: 7, name: 'Sidik Purnomo, M.Pd', role: 'Tahsin & Tahfidz Al-Qur\'an', image: null },
+  { id: 6, name: 'Kiki Komalia, M.Pd', role: 'Matematika', image: KikiPhoto },
+  { id: 7, name: 'Sidik Purnomo, M.Pd', role: 'Tahsin & Tahfidz Al-Qur\'an', image: SidikPhoto },
   { id: 8, name: 'Aulia Abdurrahman, S.Pd', role: 'Tahsin & Tahfidz Al-Qur\'an', image: AuliaPhoto },
   { id: 9, name: 'Hadi Jabbar hasan A, S.Pd', role: 'Pendidikan Agama Islam', image: HadiJabbarPhoto },
   { id: 10, name: 'Abu Amar, S.Pd', role: 'PJOK', image: AbuPhoto },
-  { id: 11, name: 'Amerza Munandar, S.Kom', role: 'Informatika', image: AmerzaPhoto },
-  { id: 12, name: 'Nurito Said, S.Pd', role: 'Seni Musik', image: null },
-  { id: 13, name: 'Desi Nurlaelasari, S.Pd', role: 'IPA & Matematika', image: null },
-  { id: 14, name: 'Nurkumalasari, S.Pd', role: 'Bahasa Inggris', image: null },
-  { id: 15, name: 'Dian Nastiti Deserita, AP', role: 'LPK', image: null },
-  { id: 16, name: 'Darsono Rian Pribadi', role: 'Kepala Tata Usaha', image: RianDarsonoPhoto },
-  { id: 17, name: 'Eko Budi Sartono', role: 'Bendahara', image: EkoPhoto },
-  { id: 18, name: 'M. Mabrur Riyamasey Mas\'ud, S.Kom., S.H.', role: 'Staff Tata Usaha', image: MabrurPhoto },
-  { id: 19, name: 'Hadi Prawoto', role: 'Pramubakti', image: HadiPrawotoPhoto },
-  { id: 20, name: 'Ahmad Furqon', role: 'Pramubakti', image: AhmadPhoto }
+  { id: 11, name: 'Nisa Lestari, S.Pd', role: 'Bimbingan Konseling', image: NisaPhoto },
+  { id: 12, name: 'Amerza Munandar, S.Kom', role: 'Informatika', image: AmerzaPhoto },
+  { id: 13, name: 'Nurito Said, S.Pd', role: 'Seni Musik', image: NuritoPhoto },
+  { id: 14, name: 'Desi Nurlaelasari, S.Pd', role: 'IPA & Matematika', image: null },
+  { id: 15, name: 'Nurkumalasari, S.Pd', role: 'Bahasa Inggris', image: null },
+  { id: 16, name: 'Dian Nastiti Deserita, AP', role: 'LPK', image: DianPhoto },
+  { id: 17, name: 'Darsono Rian Pribadi', role: 'Kepala Tata Usaha', image: RianDarsonoPhoto },
+  { id: 18, name: 'Eko Budi Sartono', role: 'Bendahara', image: EkoPhoto },
+  { id: 19, name: 'M. Mabrur Riyamasey Mas\'ud, S.Kom., S.H.', role: 'Staff Tata Usaha', image: MabrurPhoto },
+  { id: 20, name: 'Hadi Prawoto', role: 'Pramubakti', image: HadiPrawotoPhoto },
+  { id: 21, name: 'Ahmad Furqon', role: 'Pramubakti', image: AhmadPhoto }
 ].map((item) => ({
   ...item,
-  image: item.image || '/uploads/staff/dummy-staff.jpg',
+  image: item.image || '/uploads/staff/dummy-staff.png',
   altText: `${item.name} - ${item.role}`
 }));
 
@@ -100,7 +108,7 @@ const StaffPage = () => {
                   className="w-full h-full object-cover"
                   loading="lazy"
                   onError={(e) => {
-                    e.currentTarget.src = '/uploads/staff/dummy-staff.jpg';
+                    e.currentTarget.src = '/uploads/staff/dummy-staff.png';
                   }}
                 />
               </div>
