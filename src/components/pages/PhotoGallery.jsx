@@ -1,44 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, X } from 'lucide-react';
-import { db } from '@/lib/db';
+
+// STATIC PHOTO GALLERY - NO JSON - 20 PHOTOS
+const PHOTOS = [
+  { id: 1, title: 'Kegiatan Belajar Mengajar', category: 'Akademik' },
+  { id: 2, title: 'Upacara Bendera', category: 'Kegiatan Sekolah' },
+  { id: 3, title: 'Praktikum Laboratorium IPA', category: 'Akademik' },
+  { id: 4, title: 'Kegiatan Olahraga', category: 'Ekstrakurikuler' },
+  { id: 5, title: 'Pembelajaran Tahfidz', category: 'Keagamaan' },
+  { id: 6, title: 'Kompetisi Sains', category: 'Prestasi' },
+  { id: 7, title: 'Kegiatan Pramuka', category: 'Ekstrakurikuler' },
+  { id: 8, title: 'Peringatan Hari Besar Islam', category: 'Keagamaan' },
+  { id: 9, title: 'Perpustakaan Sekolah', category: 'Fasilitas' },
+  { id: 10, title: 'Kegiatan Seni dan Budaya', category: 'Ekstrakurikuler' },
+  { id: 11, title: 'Ruang Kelas', category: 'Fasilitas' },
+  { id: 12, title: 'Lomba Pidato', category: 'Prestasi' },
+  { id: 13, title: 'Pembelajaran Komputer', category: 'Akademik' },
+  { id: 14, title: 'Kegiatan Bakti Sosial', category: 'Kegiatan Sekolah' },
+  { id: 15, title: 'Pekan Olahraga', category: 'Ekstrakurikuler' },
+  { id: 16, title: 'Wisuda Tahfidz', category: 'Keagamaan' },
+  { id: 17, title: 'Study Tour', category: 'Kegiatan Sekolah' },
+  { id: 18, title: 'Aula Sekolah', category: 'Fasilitas' },
+  { id: 19, title: 'Kegiatan English Club', category: 'Ekstrakurikuler' },
+  { id: 20, title: 'Lapangan Olahraga', category: 'Fasilitas' }
+];
 
 const PhotoGallery = () => {
   const [selectedImage, setSelectedImage] = useState(null);
-  const [photos, setPhotos] = useState([]);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch('/api/gallery/list.php?published=1&limit=100');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        if (!json.success) throw new Error(json.message || 'Load failed');
-        const stored = json.data?.items || [];
-        if (stored.length) {
-          const uploadedPhotos = stored.map((img, idx) => ({
-            id: img.id || idx,
-            title: db.formatName(img.title || img.filename) || 'Dokumentasi Sekolah',
-            category: img.category || 'Galeri',
-            image: img.url,
-            altText: img.alt_text || `${img.title || 'Foto'} SMP Muhammadiyah 35 Jakarta`,
-            seoTitle: img.title || 'Dokumentasi'
-          }));
-          setPhotos(uploadedPhotos);
-        } else {
-          setPhotos([]);
-        }
-      } catch (e) {
-        console.warn('[PhotoGallery] API load failed:', e.message);
-        setPhotos([]);
-      }
-    };
-    load();
-  }, []);
-
   const navigate = useNavigate();
+
+  console.log('✅ PHOTO GALLERY LOADED - STATIC MODE');
+  console.log('✅ Photo count:', PHOTOS.length);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E8F4F8] to-white pt-24 pb-20">
@@ -72,15 +67,9 @@ const PhotoGallery = () => {
           </p>
         </motion.div>
 
-        {/* Photo Grid */}
-        {photos.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-16 text-center">
-            <p className="text-gray-600 text-lg mb-2">Belum ada foto galeri yang ditambahkan.</p>
-            <p className="text-gray-400 text-sm">Admin dapat mengelola galeri dari dashboard.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {photos.map((photo, index) => (
+        {/* Photo Grid - ALWAYS SHOW */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {PHOTOS.map((photo, index) => (
             <motion.div
               key={photo.id}
               initial={{ opacity: 0, scale: 0.9 }}
@@ -89,18 +78,12 @@ const PhotoGallery = () => {
               className="group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all cursor-pointer"
               onClick={() => setSelectedImage(photo)}
             >
-              <div className="aspect-square overflow-hidden bg-gray-100">
-                <img 
-                  src={photo.image} 
-                  alt={photo.altText || photo.title}
-                  title={photo.seoTitle || photo.title}
-                  onError={(e) => {
-                    console.warn('[gallery] image failed to load:', photo.title);
-                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23e5e7eb" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="16" fill="%239ca3af" text-anchor="middle" dominant-baseline="middle"%3EImage not available%3C/text%3E%3C/svg%3E';
-                  }}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  loading="lazy"
-                />
+              <div className="aspect-square overflow-hidden bg-gradient-to-br from-[#D4E8F0] to-[#E8F4F8] flex items-center justify-center">
+                {/* Photo placeholder - titles only for now */}
+                <div className="text-center p-4">
+                  <div className="text-gray-400 text-5xl font-light mb-4">📷</div>
+                  <p className="text-gray-600 text-sm font-medium">{photo.title}</p>
+                </div>
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
@@ -110,8 +93,7 @@ const PhotoGallery = () => {
               </div>
             </motion.div>
           ))}
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Lightbox Modal */}
@@ -137,14 +119,11 @@ const PhotoGallery = () => {
               >
                 <X size={32} />
               </button>
-              <img 
-                src={selectedImage.image} 
-                alt={selectedImage.title}
-                className="w-full h-auto rounded-2xl shadow-2xl"
-              />
-              <div className="mt-4 text-center">
+              <div className="bg-gradient-to-br from-[#D4E8F0] to-[#E8F4F8] rounded-2xl shadow-2xl p-12 text-center">
+                <div className="text-gray-400 text-9xl mb-8">📷</div>
                 <p className="text-sm text-[#5D9CEC] mb-2">{selectedImage.category}</p>
-                <h3 className="text-2xl font-bold text-white">{selectedImage.title}</h3>
+                <h3 className="text-2xl font-bold text-gray-800">{selectedImage.title}</h3>
+                <p className="text-gray-600 mt-4">Image placeholder - akan diganti dengan foto asli</p>
               </div>
             </motion.div>
           </motion.div>
