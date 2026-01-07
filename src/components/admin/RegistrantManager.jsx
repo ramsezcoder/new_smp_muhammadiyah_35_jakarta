@@ -9,16 +9,21 @@ const RegistrantManager = ({ user }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    setRegistrants(db.getRegistrants());
-  }, []);
+  async function load() {
+    const rows = await db.getRegistrants();
+    setRegistrants(rows || []);
+  }
+  load();
+}, []);
 
-  const handleDelete = (id) => {
-    if(window.confirm('Are you sure you want to delete this registrant?')) {
-        db.deleteRegistrant(id, user.id);
-        setRegistrants(db.getRegistrants());
-        toast({ title: "Deleted", description: "Registrant deleted" });
-    }
-  };
+  const handleDelete = async (id) => {
+  if(window.confirm('Are you sure you want to delete this registrant?')) {
+      await db.deleteRegistrant(id, user.id);
+      const rows = await db.getRegistrants();
+      setRegistrants(rows || []);
+      toast({ title: "Deleted", description: "Registrant deleted" });
+  }
+};
 
   const handleExport = () => {
     const headers = ['Nama', 'Asal Sekolah', 'Ortu', 'WA', 'Jenis', 'Tanggal'];

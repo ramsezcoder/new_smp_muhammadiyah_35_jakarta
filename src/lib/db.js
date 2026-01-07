@@ -136,12 +136,12 @@ const IMPORTED_NEWS = (Array.isArray(importedPosts) ? importedPosts : [])
 const DEFAULT_SETTINGS = {
   siteName: 'SMP Muhammadiyah 35 Jakarta',
   email: 'smpmuh35@gmail.com',
-  phone: '(021) 8459-1142',
+  phone: '(021) 7210785',
   whatsappNumber: '6281234567890',
-  address: 'Jl. Raya Condet No. 27, Jakarta Timur, DKI Jakarta 13530',
-  instagramUrl: 'https://instagram.com/smpmuh35jakarta',
-  youtubeUrl: 'https://youtube.com/c/smpmuh35jakarta',
-  facebookUrl: 'https://facebook.com/smpmuh35jakarta',
+  address: 'Jl. Panjang No.19, RT.8/RW.9, Cipulir, Kec. Kebayoran Lama, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12230',
+  instagramUrl: 'https://www.instagram.com/smpmuh_35/',
+  youtubeUrl: 'https://www.youtube.com/@smpmuh_35',
+  facebookUrl: 'https://www.facebook.com/smpmuh35',
   twitterUrl: 'https://twitter.com/smpmuh35jkt',
   maxUploadSize: 5, // MB
   maintenanceMode: false
