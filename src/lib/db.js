@@ -1,6 +1,6 @@
 // Simulation of a Database Layer using LocalStorage
 // Abstracts data access to resemble a MySQL schema structure
-import importedPosts from '@/data/importedPosts.json';
+const importedPosts = [];
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1509062522246-3755977927d7';
 const GALLERY_KEY = 'gallery_uploads';
@@ -135,7 +135,7 @@ const IMPORTED_NEWS = (Array.isArray(importedPosts) ? importedPosts : [])
 
 const DEFAULT_SETTINGS = {
   siteName: 'SMP Muhammadiyah 35 Jakarta',
-  email: 'info@smpmuh35jakarta.sch.id',
+  email: 'smpmuh35@gmail.com',
   phone: '(021) 8459-1142',
   whatsappNumber: '6281234567890',
   address: 'Jl. Raya Condet No. 27, Jakarta Timur, DKI Jakarta 13530',

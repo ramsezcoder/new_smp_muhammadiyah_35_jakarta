@@ -3,9 +3,9 @@
  * Provides graceful degradation when backend is unavailable
  */
 
-import schoolNews from '@/data/news.school.json';
-import studentNews from '@/data/news.student.json';
-import pdfData from '@/data/pdf.json';
+import schoolNews from '@/data/news.school.js';
+import studentNews from '@/data/news.student.js';
+const pdfData = [];
 
 /**
  * Fetch news with timeout and fallback to static data
@@ -82,12 +82,8 @@ export async function fetchPdfViewsWithFallback(timeout = 3000) {
     return data.views || {};
   } catch (err) {
     console.warn('[pdf] API failed for view counts, using static data', err);
-    // Return static PDF data as view counts
-    const views = {};
-    pdfData.forEach(pdf => {
-      views[pdf.id] = pdf.viewCount || 0;
-    });
-    return views;
+    // Return empty view counts in static mode
+    return {};
   }
 }
 

@@ -1,37 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ZoomIn, Image as ImageIcon } from 'lucide-react';
-import { db } from '@/lib/db';
+import { GALLERY_PHOTOS } from '@/data/galleryPhotos';
 
 const GallerySection = () => {
   const [selectedImage, setSelectedImage] = useState(null);
-  const [galleryImages, setGalleryImages] = useState([]);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch('/api/gallery/list.php?published=1&limit=6');
-        const json = await res.json();
-        const stored = json.items || [];
-        if (stored.length) {
-          setGalleryImages(stored.slice(0, 6).map((img, idx) => ({
-            id: img.id || idx,
-            caption: db.formatName(img.name || img.filename) || 'Galeri Sekolah',
-            description: img.description || 'Dokumentasi kegiatan sekolah',
-            src: img.url,
-            altText: img.altText || `${img.name || 'Foto'} SMP Muhammadiyah 35 Jakarta`,
-            seoTitle: img.seoTitle || img.name || 'Dokumentasi'
-          })));
-        } else {
-          setGalleryImages([]);
-        }
-      } catch (e) {
-        console.warn('[GallerySection] API load failed:', e.message);
-        setGalleryImages([]);
-      }
-    };
-    load();
-  }, []);
+  const galleryImages = GALLERY_PHOTOS.slice(0, 6);
 
   return (
     <section id="gallery" className="py-12 md:py-24 bg-white">
@@ -52,15 +26,9 @@ const GallerySection = () => {
           </h2>
         </motion.div>
 
-        {galleryImages.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 border border-dashed border-gray-200 rounded-2xl bg-white">
-            <p className="text-lg">Belum ada foto galeri yang ditambahkan.</p>
-            <p className="text-sm mt-2">Admin dapat mengelola galeri dari dashboard.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {galleryImages.map((image, index) => (
-              <motion.div
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          {galleryImages.map((image, index) => (
+            <motion.div
               key={image.id}
               initial={{ opacity: 0, scale: 0.9 }}
               whileInView={{ opacity: 1, scale: 1 }}
@@ -69,16 +37,16 @@ const GallerySection = () => {
               className="relative group cursor-pointer overflow-hidden rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 aspect-[4/3]"
               onClick={() => setSelectedImage(image)}
             >
-              <img 
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                alt={image.altText || image.caption}
-                title={image.seoTitle || image.caption}
-                src={image.src} 
+              <img
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                alt={image.altText || image.title}
+                title={image.title}
+                src={image.image}
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#5D9CEC]/90 via-[#5D9CEC]/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6">
                 <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                  <h3 className="text-white font-bold text-lg mb-1">{image.caption}</h3>
+                  <h3 className="text-white font-bold text-lg mb-1">{image.title}</h3>
                   <p className="text-white/90 text-sm font-light">{image.description}</p>
                 </div>
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 scale-0 group-hover:scale-100 transition-transform duration-300 delay-100">
@@ -89,8 +57,16 @@ const GallerySection = () => {
               </div>
             </motion.div>
           ))}
-          </div>
-        )}
+        </div>
+
+        <div className="text-center mt-8">
+          <a
+            href="/gallery/photos"
+            className="inline-flex items-center justify-center px-5 py-3 rounded-full bg-[#5D9CEC] text-white font-semibold hover:bg-[#4A89DC] transition-colors"
+          >
+            Lihat lagi
+          </a>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -115,13 +91,13 @@ const GallerySection = () => {
               className="max-w-5xl w-full"
               onClick={(e) => e.stopPropagation()}
             >
-              <img 
-                className="w-full h-auto max-h-[80vh] object-contain rounded-lg shadow-2xl" 
-                alt={selectedImage.caption}
-                src={selectedImage.src} 
+              <img
+                className="w-full h-auto max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                alt={selectedImage.title}
+                src={selectedImage.image}
               />
               <div className="mt-6 text-center">
-                <h3 className="text-white text-xl font-bold mb-2">{selectedImage.caption}</h3>
+                <h3 className="text-white text-xl font-bold mb-2">{selectedImage.title}</h3>
                 <p className="text-gray-300">{selectedImage.description}</p>
               </div>
             </motion.div>

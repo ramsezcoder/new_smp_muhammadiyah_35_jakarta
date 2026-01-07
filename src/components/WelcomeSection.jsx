@@ -60,7 +60,7 @@ const WelcomeSection = ({ onRegisterClick }) => {
                     </div>
                     <div>
                       <div className="text-xs md:text-sm text-gray-500 font-medium">Jam Operasional</div>
-                      <div className="font-bold text-gray-800 text-base md:text-lg">08.00 – 14.00 WIB</div>
+                      <div className="font-bold text-gray-800 text-base md:text-lg">08.00 – 16.00 WIB</div>
                     </div>
                   </div>
                 </div>

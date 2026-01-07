@@ -180,10 +180,10 @@ const Navigation = ({ onRegisterClick }) => {
             
             {/* Social Icons */}
             <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
-              <a href="#" className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-500 hover:bg-[#E8F4F8] hover:text-[#5D9CEC] transition-all shadow-sm">
+              <a href="https://www.instagram.com/smpmuh_35" target="_blank" rel="noopener noreferrer" className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-500 hover:bg-[#E8F4F8] hover:text-[#5D9CEC] transition-all shadow-sm">
                 <Instagram size={16} />
               </a>
-              <a href="#" className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-500 hover:bg-[#E8F4F8] hover:text-[#5D9CEC] transition-all shadow-sm">
+              <a href="https://www.youtube.com/@smpmuh_35" target="_blank" rel="noopener noreferrer" className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-500 hover:bg-[#E8F4F8] hover:text-[#5D9CEC] transition-all shadow-sm">
                 <Youtube size={16} />
               </a>
             </div>
@@ -245,9 +245,9 @@ const Navigation = ({ onRegisterClick }) => {
               ))}
               
               <div className="flex gap-4 justify-center py-4 border-t border-gray-100 mt-2">
-                 <a href="#" className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-[#E8F4F8] text-[#5D9CEC] shadow-sm"><Instagram size={20} /></a>
-                 <a href="#" className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-[#E8F4F8] text-[#5D9CEC] shadow-sm"><Youtube size={20} /></a>
-                 <a href="#" className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-[#E8F4F8] text-[#5D9CEC] shadow-sm"><Facebook size={20} /></a>
+                 <a href="https://www.instagram.com/smpmuh_35" target="_blank" rel="noopener noreferrer" className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-[#E8F4F8] text-[#5D9CEC] shadow-sm"><Instagram size={20} /></a>
+                 <a href="https://www.youtube.com/@smpmuh_35" target="_blank" rel="noopener noreferrer" className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-[#E8F4F8] text-[#5D9CEC] shadow-sm"><Youtube size={20} /></a>
+                 <a href="https://www.facebook.com/smpmuh35jakarta" target="_blank" rel="noopener noreferrer" className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-[#E8F4F8] text-[#5D9CEC] shadow-sm"><Facebook size={20} /></a>
               </div>
 
               <div className="pt-2">

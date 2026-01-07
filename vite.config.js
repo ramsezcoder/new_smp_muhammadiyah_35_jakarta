@@ -5,14 +5,13 @@ import path from 'path';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  assetsInclude: ['**/*.json', '**/*.JPG', '**/*.jpg', '**/*.jpeg', '**/*.PNG', '**/*.png'],
   resolve: {
     alias: {
       '@': path.resolve(process.cwd(), './src'),
     },
   },
   build: {
-    // Ensure JSON files are included in the bundle
-    assetsInclude: ['**/*.json'],
     outDir: 'dist',
     sourcemap: false,
   },

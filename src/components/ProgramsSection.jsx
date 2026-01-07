@@ -6,6 +6,10 @@ import LMSIcon from '@/assets/BERBASIS_LMS.png';
 import ExchangeIcon from '@/assets/STUDENT_EXCHANGE.png';
 import ExtracurricularIcon from '@/assets/EXTRACURRICULAR.png';
 import InternationalIcon from '@/assets/INTERNATIONAL_ENGLISH_SYLLABUS.png';
+import CodingRoboticIcon from '@/assets/CODING_ROBOTIC.png';
+import MagangCitaCitaIcon from '@/assets/MAGANG_CITA_CITA.png';
+import ProgramKeputrianIcon from '@/assets/PROGRAM_KEPUTRIAN.png';
+import SubuhWarriorIcon from '@/assets/SUBUH_WARRIOR.png';
 
 const ProgramsSection = () => {
   const programs = [
@@ -39,6 +43,26 @@ const ProgramsSection = () => {
       icon: InternationalIcon,
       title: 'International English Syllabus',
       description: 'Program pembelajaran berbahasa Inggris dengan penguatan kompetensi global serta kesiapan menghadapi kurikulum internasional.'
+    },
+    {
+      icon: CodingRoboticIcon,
+      title: 'Coding & Robotic',
+      description: 'Program penguatan literasi digital melalui kegiatan coding dan robotic untuk melatih logika, kreativitas, dan problem solving siswa di era teknologi.'
+    },
+    {
+      icon: MagangCitaCitaIcon,
+      title: 'Magang Cita-Cita',
+      description: 'Program pengalaman belajar di dunia kerja sesuai minat karier siswa untuk menumbuhkan kesiapan mental, karakter, dan wawasan profesi sejak dini.'
+    },
+    {
+      icon: ProgramKeputrianIcon,
+      title: 'Program Keputrian',
+      description: 'Program pembinaan khusus siswi yang terintegrasi dengan layanan Bimbingan Konseling (BK) untuk penguatan adab, akhlak, kepemimpinan, dan karakter muslimah.'
+    },
+    {
+      icon: SubuhWarriorIcon,
+      title: 'Subuh Warrior',
+      description: 'Gerakan pembiasaan shalat Subuh berjamaah sebagai upaya pembentukan karakter disiplin, tanggung jawab, dan kedekatan spiritual siswa kepada Allah SWT.'
     }
   ];
 
@@ -60,7 +84,7 @@ const ProgramsSection = () => {
         </motion.div>
 
         {/* Desktop Grid / Mobile Carousel */}
-        <div className="flex overflow-x-auto gap-4 pb-6 -mx-4 px-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 md:pb-0 md:mx-0 md:px-0 snap-x snap-mandatory scrollbar-hide">
+        <div className="flex overflow-x-auto gap-4 pb-6 -mx-4 px-4 md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:gap-6 md:pb-0 md:mx-0 md:px-0 snap-x snap-mandatory scrollbar-hide">
           {programs.map((program, index) => {
             return (
               <motion.div
@@ -70,12 +94,12 @@ const ProgramsSection = () => {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 whileHover={{ y: -5 }}
-                className="min-w-[280px] md:min-w-0 snap-center bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-xl transition-all duration-300 border border-blue-50 group flex flex-col"
+                className="min-w-[240px] md:min-w-0 snap-center bg-white rounded-2xl p-5 md:p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-blue-50 group flex flex-col"
               >
-                <div className="w-24 h-24 md:w-28 md:h-28 rounded-2xl flex items-center justify-center mb-4 md:mb-6 transition-colors duration-300">
-                  <img src={program.icon} alt={program.title} className="w-20 h-20 md:w-24 md:h-24 object-contain" />
+                <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center mb-3 md:mb-4 transition-colors duration-300">
+                  <img src={program.icon} alt={program.title} className="w-16 h-16 md:w-20 md:h-20 object-contain" />
                 </div>
-                <h3 className="font-poppins text-lg md:text-xl font-bold text-gray-800 mb-2 group-hover:text-[#5D9CEC] transition-colors">
+                <h3 className="font-poppins text-base md:text-lg font-bold text-gray-800 mb-2 group-hover:text-[#5D9CEC] transition-colors">
                   {program.title}
                 </h3>
                 {program.subtitle && (
@@ -83,7 +107,7 @@ const ProgramsSection = () => {
                     {program.subtitle}
                   </p>
                 )}
-                <p className="text-gray-600 leading-relaxed text-sm">
+                <p className="text-gray-600 leading-relaxed text-xs md:text-sm">
                   {program.description}
                 </p>
               </motion.div>

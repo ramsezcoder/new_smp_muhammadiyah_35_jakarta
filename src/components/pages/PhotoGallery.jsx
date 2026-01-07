@@ -3,41 +3,15 @@ import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, X } from 'lucide-react';
-
-// STATIC PHOTO GALLERY - NO JSON - 20 PHOTOS WITH DUMMY IMAGES
-const PHOTOS = [
-  { id: 1, title: 'Kegiatan Belajar Mengajar', category: 'Akademik' },
-  { id: 2, title: 'Upacara Bendera', category: 'Kegiatan Sekolah' },
-  { id: 3, title: 'Praktikum Laboratorium IPA', category: 'Akademik' },
-  { id: 4, title: 'Kegiatan Olahraga', category: 'Ekstrakurikuler' },
-  { id: 5, title: 'Pembelajaran Tahfidz', category: 'Keagamaan' },
-  { id: 6, title: 'Kompetisi Sains', category: 'Prestasi' },
-  { id: 7, title: 'Kegiatan Pramuka', category: 'Ekstrakurikuler' },
-  { id: 8, title: 'Peringatan Hari Besar Islam', category: 'Keagamaan' },
-  { id: 9, title: 'Perpustakaan Sekolah', category: 'Fasilitas' },
-  { id: 10, title: 'Kegiatan Seni dan Budaya', category: 'Ekstrakurikuler' },
-  { id: 11, title: 'Ruang Kelas', category: 'Fasilitas' },
-  { id: 12, title: 'Lomba Pidato', category: 'Prestasi' },
-  { id: 13, title: 'Pembelajaran Komputer', category: 'Akademik' },
-  { id: 14, title: 'Kegiatan Bakti Sosial', category: 'Kegiatan Sekolah' },
-  { id: 15, title: 'Pekan Olahraga', category: 'Ekstrakurikuler' },
-  { id: 16, title: 'Wisuda Tahfidz', category: 'Keagamaan' },
-  { id: 17, title: 'Study Tour', category: 'Kegiatan Sekolah' },
-  { id: 18, title: 'Aula Sekolah', category: 'Fasilitas' },
-  { id: 19, title: 'Kegiatan English Club', category: 'Ekstrakurikuler' },
-  { id: 20, title: 'Lapangan Olahraga', category: 'Fasilitas' }
-].map((photo) => ({
-  ...photo,
-  image: `https://via.placeholder.com/900x900.png?text=${encodeURIComponent(photo.title)}`,
-  altText: `${photo.title} - ${photo.category}`
-}));
+import { GALLERY_PHOTOS } from '@/data/galleryPhotos';
 
 const PhotoGallery = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const navigate = useNavigate();
+  const photos = GALLERY_PHOTOS;
 
-  console.log('✅ PHOTO GALLERY LOADED - STATIC MODE');
-  console.log('✅ Photo count:', PHOTOS.length);
+  console.log('PHOTO GALLERY LOADED - STATIC MODE');
+  console.log('✅ Photo count:', photos.length);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E8F4F8] to-white pt-24 pb-20">
@@ -73,7 +47,7 @@ const PhotoGallery = () => {
 
         {/* Photo Grid - ALWAYS SHOW */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {PHOTOS.map((photo, index) => (
+          {photos.map((photo, index) => (
             <motion.div
               key={photo.id}
               initial={{ opacity: 0, scale: 0.9 }}
@@ -85,12 +59,12 @@ const PhotoGallery = () => {
               <div className="aspect-square overflow-hidden bg-gray-100">
                 <img
                   src={photo.image}
-                  alt={photo.altText}
-                  title={photo.altText}
+                  alt={photo.title}
+                  title={photo.title}
                   loading="lazy"
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   onError={(e) => {
-                    e.currentTarget.src = 'https://via.placeholder.com/900x900.png?text=Photo';
+                    e.currentTarget.src = photo.image;
                   }}
                 />
               </div>
@@ -131,10 +105,10 @@ const PhotoGallery = () => {
               <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
                 <img
                   src={selectedImage.image}
-                  alt={selectedImage.altText}
+                  alt={selectedImage.title}
                   className="w-full h-auto"
                   onError={(e) => {
-                    e.currentTarget.src = 'https://via.placeholder.com/1200x900.png?text=Photo';
+                    e.currentTarget.src = selectedImage.image;
                   }}
                 />
                 <div className="p-6 text-center">

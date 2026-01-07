@@ -6,14 +6,37 @@ import { ArrowLeft, Play } from 'lucide-react';
 
 const VideoGallery = () => {
   const navigate = useNavigate();
-  // STATIC VIDEO LIST - NO JSON/LOCALSTORAGE
+  
+  // STATIC VIDEO LIST - OFFICIAL CHANNEL VIDEOS
   const videos = [
-    { id: 1, title: 'Profil Sekolah', category: 'Profil', embedId: 'dQw4w9WgXcQ', description: 'Gambaran umum SMP Muhammadiyah 35 Jakarta.' },
-    { id: 2, title: 'Kegiatan Belajar', category: 'Akademik', embedId: 'ysz5S6PUM-U', description: 'Suasana belajar interaktif di kelas.' },
-    { id: 3, title: 'Ekstrakurikuler', category: 'Kegiatan', embedId: '3GwjfUFyY6M', description: 'Pilihan ekstrakurikuler untuk pengembangan siswa.' },
-    { id: 4, title: 'Prestasi Siswa', category: 'Prestasi', embedId: 'V-_O7nl0Ii0', description: 'Rangkaian prestasi siswa di berbagai bidang.' },
-    { id: 5, title: 'Tahfidz & Keagamaan', category: 'Keagamaan', embedId: 'a3Z7zEc7AXQ', description: 'Program tahfidz dan kegiatan keagamaan sekolah.' },
-    { id: 6, title: 'Fasilitas Sekolah', category: 'Fasilitas', embedId: 'eX2qFMC8cFo', description: 'Tur singkat fasilitas pendukung belajar.' }
+    {
+      id: 1,
+      title: "Detik-Detik Penghormatan Bendera Merah Putih: Merinding! Momen Bersejarah di Cipulir",
+      url: "https://www.youtube.com/watch?v=NELU3RZbL9Q",
+      videoId: "NELU3RZbL9Q",
+      description: "Kibarkan Semangat Merah Putih! Saksikan momen epik yang menggetarkan hati saat masyarakat dari berbagai kalangan bersatu padu dalam penghormatan bendera merah putih di Persimpangan SESKOAL"
+    },
+    {
+      id: 2,
+      title: "HARI GURU DAN PENYERAHAN HADIAH SISWA BERPRESTASI",
+      url: "https://www.youtube.com/watch?v=euHvWzW2mS0",
+      videoId: "euHvWzW2mS0",
+      description: "HARI GURU DAN PENYERAHAN HADIAH SISWA BERPRESTASI"
+    },
+    {
+      id: 3,
+      title: "Company Profile SMP Muhammadiyah 35 - 2023/2024",
+      url: "https://www.youtube.com/watch?v=m120qx5WaUM",
+      videoId: "m120qx5WaUM",
+      description: "Company Profile SMP Muhammadiyah 35 - 2023/2024"
+    },
+    {
+      id: 4,
+      title: "Tari Laskar Budaya - SMP Muhammadiyah 35 Jakarta",
+      url: "https://www.youtube.com/watch?v=oBRIeFQ1Ob4",
+      videoId: "oBRIeFQ1Ob4",
+      description: "Tim Tari"
+    }
   ];
 
   return (
@@ -48,51 +71,59 @@ const VideoGallery = () => {
           </p>
         </motion.div>
 
-        {/* Video Grid */}
+        {/* Video Grid - 2x2 Layout */}
         {videos.length === 0 ? (
           <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-16 text-center mb-16">
             <p className="text-gray-600 text-lg mb-2">Belum ada video galeri yang ditambahkan.</p>
             <p className="text-gray-400 text-sm">Admin dapat mengelola video dari dashboard.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
             {videos.map((video, index) => (
             <motion.div
               key={video.id}
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.05 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
               className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group"
             >
-              {/* Video Embed */}
-              <div className="relative aspect-video bg-gray-900">
-                <iframe
-                  className="w-full h-full"
-                  src={`https://www.youtube.com/embed/${video.embedId}`}
-                  title={video.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  loading="lazy"
+              {/* Video Thumbnail with Link */}
+              <a 
+                href={video.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative block aspect-video bg-gray-900 overflow-hidden"
+              >
+                <img
+                  src={`https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`}
+                  alt={video.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                {/* Play Overlay - Optional decorative element */}
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex items-center justify-center">
-                  <div className="w-16 h-16 bg-[#5D9CEC]/80 rounded-full flex items-center justify-center">
-                    <Play size={28} className="text-white ml-1" />
+                {/* Play Overlay */}
+                <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                  <div className="w-16 h-16 bg-[#5D9CEC] group-hover:bg-red-600 rounded-full flex items-center justify-center transition-colors shadow-lg">
+                    <Play size={28} className="text-white ml-1" fill="white" />
                   </div>
                 </div>
-              </div>
+              </a>
 
               {/* Video Info */}
-              <div className="p-5">
-                <span className="inline-block px-3 py-1 bg-[#E8F4F8] text-[#5D9CEC] text-xs font-medium rounded-full mb-3">
-                  {video.category}
-                </span>
-                <h3 className="font-poppins text-xl font-bold text-gray-800 mb-2 group-hover:text-[#5D9CEC] transition-colors">
+              <div className="p-6">
+                <h3 className="font-poppins text-xl font-bold text-gray-800 mb-3 group-hover:text-[#5D9CEC] transition-colors line-clamp-2">
                   {video.title}
                 </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
+                <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-3">
                   {video.description}
                 </p>
+                <a
+                  href={video.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-[#5D9CEC] hover:text-[#4A89DC] font-semibold text-sm transition-colors"
+                >
+                  <Play size={16} />
+                  Tonton di YouTube
+                </a>
               </div>
             </motion.div>
           ))}
@@ -113,7 +144,7 @@ const VideoGallery = () => {
             Subscribe untuk mendapatkan update video terbaru seputar kegiatan sekolah
           </p>
           <a
-            href="https://www.youtube.com/@smpmuhammadiyah35jakarta"
+            href="https://www.youtube.com/@smpmuh_35"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-white text-[#5D9CEC] px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors"

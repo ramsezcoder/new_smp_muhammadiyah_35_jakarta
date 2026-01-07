@@ -19,7 +19,7 @@ export const SITE_INFO = {
   url: 'https://smpmuh35jakarta.sch.id',
   logo: 'https://smpmuh35jakarta.sch.id/logo.png',
   image: 'https://smpmuh35jakarta.sch.id/og-image.jpg',
-  email: 'info@smpmuh35jakarta.sch.id',
+  email: 'smpmuh35@gmail.com',
   socialMedia: {
     instagram: 'https://instagram.com/smpmuh35jakarta',
     youtube: 'https://youtube.com/@smpmuh35jakarta',

@@ -4,31 +4,43 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
-// HARDCODED STATIC STAFF LIST WITH DUMMY PHOTOS - NO JSON/LOCALSTORAGE
+// Import staff photos
+import AbuPhoto from '@/assets/abu.jpeg';
+import AhmadPhoto from '@/assets/ahmad.jpeg';
+import AmerzaPhoto from '@/assets/amerza.jpeg';
+import AuliaPhoto from '@/assets/aulia.jpeg';
+import EkoPhoto from '@/assets/eko.jpeg';
+import HadiJabbarPhoto from '@/assets/hadi_jabbar.jpeg';
+import HadiPrawotoPhoto from '@/assets/hadi_prawoto.jpeg';
+import RianDarsonoPhoto from '@/assets/rian_darsono.jpeg';
+import OliviaPhoto from '@/assets/olivia.jpg';
+import MabrurPhoto from '@/assets/mabrur.jpg';
+
+// HARDCODED STATIC STAFF LIST - NO JSON/LOCALSTORAGE
 const STAFF_MEMBERS = [
-  { id: 1, name: 'Risyanti Khamidah, S.Pd', role: 'Kepala Sekolah' },
-  { id: 2, name: 'Alwi Jamalulail, S.Pd.I', role: 'Wakasek Kurikulum' },
-  { id: 3, name: 'Arista Saptarini, S.Pd', role: 'Wakasek Kesiswaan' },
-  { id: 4, name: 'Sofia Mar\'atussholiha, S.Pd', role: 'Bahasa Indonesia' },
-  { id: 5, name: 'Olivia Priyandarweni, S.Pd', role: 'PKn & IPS' },
-  { id: 6, name: 'Kiki Komalia, M.Pd', role: 'Matematika' },
-  { id: 7, name: 'Sidik Purnomo, M.Pd', role: 'Tahsin & Tahfidz Al-Qur\'an' },
-  { id: 8, name: 'Aulia Abdurrahman, S.Pd', role: 'Tahsin & Tahfidz Al-Qur\'an' },
-  { id: 9, name: 'Hadi Jabbar hasan A, S.Pd', role: 'Pendidikan Agama Islam' },
-  { id: 10, name: 'Abu Amar, S.Pd', role: 'PJOK' },
-  { id: 11, name: 'Amerza Munandar, S.Kom', role: 'Informatika' },
-  { id: 12, name: 'Nurit Said, S.Pd', role: 'Seni Musik' },
-  { id: 13, name: 'Desi Nurlaelasari, S.Pd', role: 'IPA & Matematika' },
-  { id: 14, name: 'Nurkumalasari, S.Pd', role: 'Bahasa Inggris' },
-  { id: 15, name: 'Dian Nastiti Deserita, AP', role: 'LPK' },
-  { id: 16, name: 'Darsono Rian Pribadi', role: 'Kepala Tata Usaha' },
-  { id: 17, name: 'Eko Budi Sartono', role: 'Bendahara' },
-  { id: 18, name: 'M. Mabrur Riyamasey Mas\'ud, S.Kom., S.H.', role: 'Staff Tata Usaha' },
-  { id: 19, name: 'Hadi Prawoto', role: 'Pramubakti' },
-  { id: 20, name: 'Ahmad Furqon', role: 'Pramubakti' }
+  { id: 1, name: 'Risyanti Khamidah, S.Pd', role: 'Kepala Sekolah', image: null },
+  { id: 2, name: 'Alwi Jamalulail, S.Pd.I', role: 'Wakasek Kurikulum', image: null },
+  { id: 3, name: 'Arista Saptarini, S.Pd', role: 'Wakasek Kesiswaan', image: null },
+  { id: 4, name: 'Sofia Mar\'atussholiha, S.Pd', role: 'Bahasa Indonesia', image: null },
+  { id: 5, name: 'Olivia Priyandarweni, S.Pd', role: 'PKn & IPS', image: OliviaPhoto },
+  { id: 6, name: 'Kiki Komalia, M.Pd', role: 'Matematika', image: null },
+  { id: 7, name: 'Sidik Purnomo, M.Pd', role: 'Tahsin & Tahfidz Al-Qur\'an', image: null },
+  { id: 8, name: 'Aulia Abdurrahman, S.Pd', role: 'Tahsin & Tahfidz Al-Qur\'an', image: AuliaPhoto },
+  { id: 9, name: 'Hadi Jabbar hasan A, S.Pd', role: 'Pendidikan Agama Islam', image: HadiJabbarPhoto },
+  { id: 10, name: 'Abu Amar, S.Pd', role: 'PJOK', image: AbuPhoto },
+  { id: 11, name: 'Amerza Munandar, S.Kom', role: 'Informatika', image: AmerzaPhoto },
+  { id: 12, name: 'Nurito Said, S.Pd', role: 'Seni Musik', image: null },
+  { id: 13, name: 'Desi Nurlaelasari, S.Pd', role: 'IPA & Matematika', image: null },
+  { id: 14, name: 'Nurkumalasari, S.Pd', role: 'Bahasa Inggris', image: null },
+  { id: 15, name: 'Dian Nastiti Deserita, AP', role: 'LPK', image: null },
+  { id: 16, name: 'Darsono Rian Pribadi', role: 'Kepala Tata Usaha', image: RianDarsonoPhoto },
+  { id: 17, name: 'Eko Budi Sartono', role: 'Bendahara', image: EkoPhoto },
+  { id: 18, name: 'M. Mabrur Riyamasey Mas\'ud, S.Kom., S.H.', role: 'Staff Tata Usaha', image: MabrurPhoto },
+  { id: 19, name: 'Hadi Prawoto', role: 'Pramubakti', image: HadiPrawotoPhoto },
+  { id: 20, name: 'Ahmad Furqon', role: 'Pramubakti', image: AhmadPhoto }
 ].map((item) => ({
   ...item,
-  image: `https://via.placeholder.com/600x720.png?text=${encodeURIComponent(item.name)}`,
+  image: item.image || '/uploads/staff/dummy-staff.jpg',
   altText: `${item.name} - ${item.role}`
 }));
 
@@ -88,7 +100,7 @@ const StaffPage = () => {
                   className="w-full h-full object-cover"
                   loading="lazy"
                   onError={(e) => {
-                    e.currentTarget.src = 'https://via.placeholder.com/600x720.png?text=Staff+Photo';
+                    e.currentTarget.src = '/uploads/staff/dummy-staff.jpg';
                   }}
                 />
               </div>

@@ -27,10 +27,10 @@ const Footer = () => {
               Mencetak generasi berakhlak mulia, cerdas, dan berwawasan global dengan landasan nilai-nilai Islam yang kuat.
             </p>
             <div className="flex gap-4">
-              <a href="https://instagram.com/smpmuh35jakarta" target="_blank" rel="noopener noreferrer" className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full flex items-center justify-center hover:bg-[#5D9CEC] hover:text-white transition-all shadow-sm">
+              <a href="https://www.instagram.com/smpmuh_35" target="_blank" rel="noopener noreferrer" className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full flex items-center justify-center hover:bg-[#5D9CEC] hover:text-white transition-all shadow-sm">
                 <Instagram className="w-4 h-4 md:w-5 md:h-5" />
               </a>
-              <a href="https://youtube.com/@smpmuh35jakarta" target="_blank" rel="noopener noreferrer" className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full flex items-center justify-center hover:bg-[#5D9CEC] hover:text-white transition-all shadow-sm">
+              <a href="https://www.youtube.com/@smpmuh_35" target="_blank" rel="noopener noreferrer" className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full flex items-center justify-center hover:bg-[#5D9CEC] hover:text-white transition-all shadow-sm">
                 <Youtube className="w-4 h-4 md:w-5 md:h-5" />
               </a>
               <a href="https://facebook.com/smpmuh35jakarta" target="_blank" rel="noopener noreferrer" className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full flex items-center justify-center hover:bg-[#5D9CEC] hover:text-white transition-all shadow-sm">
@@ -79,7 +79,7 @@ const Footer = () => {
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-4 h-4 md:w-5 md:h-5 text-[#5D9CEC] shrink-0" />
-                <a href="mailto:info@smpmuh35jakarta.sch.id" className="hover:text-[#5D9CEC] transition-colors">info@smpmuh35jakarta.sch.id</a>
+                <a href="mailto:smpmuh35@gmail.com" className="hover:text-[#5D9CEC] transition-colors">smpmuh35@gmail.com</a>
               </li>
             </ul>
           </div>
