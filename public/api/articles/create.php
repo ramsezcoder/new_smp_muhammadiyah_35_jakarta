@@ -171,7 +171,6 @@ try {
       seo_title,
       seo_description,
       author_id,
-      author_name,
       sort_order,
       published_at
     )
@@ -191,7 +190,6 @@ try {
     $seoTitle,
     $seoDescription,
     $user['sub'],
-    $user['name'] ?? 'Unknown',
     $maxSort + 1,
     $publishedAt
   ]);
