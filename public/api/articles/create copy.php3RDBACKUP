@@ -135,18 +135,18 @@ try {
       slug,
       content_html,
       excerpt,
+      featured_image,
+      featured_image_alt,
       category,
       tags_json,
       status,
-      featured_image,
-      featured_image_alt,
-      author_id,
       seo_title,
       seo_description,
+      author_id,
       sort_order,
       published_at
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   );
 
   $stmt->execute([
@@ -154,14 +154,14 @@ try {
     $slug,
     $content,
     $excerpt,
+    $featuredImage ?: null,
+    $featuredImageAlt,
     $category,
     $tags,
     $status,
-    $featuredImage ?: null,
-    $featuredImageAlt,
-    (int)$user['sub'],
     $seoTitle,
     $seoDescription,
+    $user['sub'],
     $maxSort + 1,
     $publishedAt
   ]);
