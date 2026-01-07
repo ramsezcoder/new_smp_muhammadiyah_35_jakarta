@@ -522,8 +522,11 @@ export const db = {
   getRegistrants: async () => {
     const resp = await fetch('/api/ppdb/list.php');
     const json = await resp.json();
-    if (!resp.ok || !json.success) return [];
-    return json.data?.items || [];
+    if (!resp.ok) return [];
+    if (Array.isArray(json)) return json;
+    if (Array.isArray(json?.data)) return json.data;
+    if (Array.isArray(json?.data?.items)) return json.data.items;
+    return [];
   },
 
   saveRegistrant: async (data) => {

@@ -11,18 +11,18 @@ const RegistrantManager = ({ user }) => {
   useEffect(() => {
   async function load() {
     const rows = await db.getRegistrants();
-    setRegistrants(rows || []);
+    setRegistrants(Array.isArray(rows) ? rows : []);
   }
   load();
 }, []);
 
   const handleDelete = async (id) => {
-  if(window.confirm('Are you sure you want to delete this registrant?')) {
+    if(window.confirm('Are you sure you want to delete this registrant?')) {
       await db.deleteRegistrant(id, user.id);
       const rows = await db.getRegistrants();
-      setRegistrants(rows || []);
+      setRegistrants(Array.isArray(rows) ? rows : []);
       toast({ title: "Deleted", description: "Registrant deleted" });
-  }
+    }
 };
 
   const handleExport = () => {
