@@ -84,6 +84,7 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
         ref={editorRef}
         dir="ltr"
         className="min-h-[300px] p-4 focus:outline-none prose max-w-none text-gray-800 font-roboto"
+        style={{ direction: 'ltr', unicodeBidi: 'plaintext', textAlign: 'left' }}
         contentEditable
         onInput={handleInput}
         onFocus={() => setIsFocused(true)}
