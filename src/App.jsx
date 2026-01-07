@@ -26,9 +26,7 @@ import HistoryPage from '@/components/pages/HistoryPage';
 import GalleryIndexPage from '@/components/pages/GalleryIndexPage';
 import PhotoGallery from '@/components/pages/PhotoGallery';
 import VideoGallery from '@/components/pages/VideoGallery';
-import InfographicGallery from '@/components/pages/InfographicGallery';
 import EModulePage from '@/components/pages/EModulePage';
-import PrestasiPage from '@/components/pages/PrestasiPage';
 import NewsListPage from '@/pages/news/NewsListPage';
 import { SITE_INFO, SEO_KEYWORDS, generateTitle, generateDescription, getOrganizationSchema, getLocalBusinessSchema, getBreadcrumbSchema } from '@/lib/seo-utils';
 
@@ -182,9 +180,9 @@ function App() {
         <Route path="gallery" element={<GalleryIndexPage />} />
         <Route path="gallery/photos" element={<PhotoGallery />} />
         <Route path="gallery/videos" element={<VideoGallery />} />
-        <Route path="gallery/infographics" element={<InfographicGallery />} />
+        <Route path="gallery/infographics" element={<Navigate to="/gallery" replace />} />
         <Route path="student/e-module" element={<EModulePage />} />
-        <Route path="student/prestasi" element={<PrestasiPage />} />
+        <Route path="student/prestasi" element={<Navigate to="/student" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

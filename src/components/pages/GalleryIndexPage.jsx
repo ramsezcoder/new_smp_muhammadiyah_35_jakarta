@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Image, Film, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Image, Film } from 'lucide-react';
 
 const GalleryIndexPage = () => {
   const navigate = useNavigate();
@@ -26,15 +26,6 @@ const GalleryIndexPage = () => {
       color: "from-purple-400 to-purple-600",
       count: "15+ video"
     },
-    {
-      id: 3,
-      title: "Infografis Prestasi",
-      description: "Infografis pencapaian dan prestasi siswa",
-      icon: BarChart3,
-      path: "/gallery/infographics",
-      color: "from-emerald-400 to-emerald-600",
-      count: "20+ infografis"
-    }
   ];
 
   return (

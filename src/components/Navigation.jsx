@@ -42,6 +42,14 @@ const Navigation = ({ onRegisterClick }) => {
   };
 
   const handleMenuClick = (href) => {
+    // External link
+    if (href.startsWith('http')) {
+      window.location.href = href;
+      setIsMobileMenuOpen(false);
+      setActiveDropdown(null);
+      return;
+    }
+
     if (href.startsWith('/')) {
       navigate(href);
       setIsMobileMenuOpen(false);
@@ -87,8 +95,7 @@ const Navigation = ({ onRegisterClick }) => {
       href: 'gallery',
       dropdown: [
         { label: 'Photo', href: '/gallery/photos' },
-        { label: 'Video', href: '/gallery/videos' },
-        { label: 'Infographic', href: '/gallery/infographics' }
+        { label: 'Video', href: '/gallery/videos' }
       ]
     },
     { label: 'Facilities', href: 'facilities' },
@@ -96,7 +103,7 @@ const Navigation = ({ onRegisterClick }) => {
       label: 'Online', 
       href: 'online',
       dropdown: [
-        { label: 'CBT', href: 'online' },
+        { label: 'CBT', href: 'https://exam.smpmuh35jkt.sch.id/' },
         { label: 'PPDB', href: 'registration' },
         { label: 'E-Raport', href: 'online' },
         { label: 'LMS', href: 'online' },
@@ -107,7 +114,6 @@ const Navigation = ({ onRegisterClick }) => {
       label: 'Student', 
       href: 'achievements',
       dropdown: [
-        { label: 'Prestasi', href: '/student/prestasi' },
         { label: 'E-Modul', href: '/student/e-module' }
       ]
     },
