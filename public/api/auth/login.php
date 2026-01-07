@@ -78,7 +78,8 @@ try {
     ]
   ]);
 } catch (Throwable $e) {
-  error_log('Login error: ' . $e->getMessage());
-  respond(false, 'Login failed. Please try again.', [], 500);
+  error_log('Login error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+  error_log('Stack trace: ' . $e->getTraceAsString());
+  respond(false, 'Login failed: ' . $e->getMessage(), ['debug' => $e->getFile() . ':' . $e->getLine()], 500);
 }
 ?>
