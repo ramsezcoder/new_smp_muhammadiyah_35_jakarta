@@ -34,7 +34,7 @@ const RegistrationSection = () => {
       setFormData({ ...formData, [name]: value });
       return;
     }
-    setFormData({ ...formData, [name]: sanitizeInput(value) });
+    setFormData({ ...formData, [name]: (value) });
   };
 
   const handleSubmit = async (e) => {

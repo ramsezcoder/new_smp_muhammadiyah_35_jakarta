@@ -4,10 +4,10 @@ export function sanitizeInput(v) {
   return v
     .toString()
     .normalize('NFKC')
-    .trim()
     .replace(/script/gi, '')
     .replace(/[<>/{}$%^*;()=+`~|]/g, '')
     .replace(/\s+/g, ' ')
+    .trim()
     .substring(0, 100);
 }
 
