@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, X } from 'lucide-react';
 
-// STATIC PHOTO GALLERY - NO JSON - 20 PHOTOS
+// STATIC PHOTO GALLERY - NO JSON - 20 PHOTOS WITH DUMMY IMAGES
 const PHOTOS = [
   { id: 1, title: 'Kegiatan Belajar Mengajar', category: 'Akademik' },
   { id: 2, title: 'Upacara Bendera', category: 'Kegiatan Sekolah' },
@@ -26,7 +26,11 @@ const PHOTOS = [
   { id: 18, title: 'Aula Sekolah', category: 'Fasilitas' },
   { id: 19, title: 'Kegiatan English Club', category: 'Ekstrakurikuler' },
   { id: 20, title: 'Lapangan Olahraga', category: 'Fasilitas' }
-];
+].map((photo) => ({
+  ...photo,
+  image: `https://via.placeholder.com/900x900.png?text=${encodeURIComponent(photo.title)}`,
+  altText: `${photo.title} - ${photo.category}`
+}));
 
 const PhotoGallery = () => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -78,12 +82,17 @@ const PhotoGallery = () => {
               className="group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all cursor-pointer"
               onClick={() => setSelectedImage(photo)}
             >
-              <div className="aspect-square overflow-hidden bg-gradient-to-br from-[#D4E8F0] to-[#E8F4F8] flex items-center justify-center">
-                {/* Photo placeholder - titles only for now */}
-                <div className="text-center p-4">
-                  <div className="text-gray-400 text-5xl font-light mb-4">📷</div>
-                  <p className="text-gray-600 text-sm font-medium">{photo.title}</p>
-                </div>
+              <div className="aspect-square overflow-hidden bg-gray-100">
+                <img
+                  src={photo.image}
+                  alt={photo.altText}
+                  title={photo.altText}
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://via.placeholder.com/900x900.png?text=Photo';
+                  }}
+                />
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
@@ -119,11 +128,19 @@ const PhotoGallery = () => {
               >
                 <X size={32} />
               </button>
-              <div className="bg-gradient-to-br from-[#D4E8F0] to-[#E8F4F8] rounded-2xl shadow-2xl p-12 text-center">
-                <div className="text-gray-400 text-9xl mb-8">📷</div>
-                <p className="text-sm text-[#5D9CEC] mb-2">{selectedImage.category}</p>
-                <h3 className="text-2xl font-bold text-gray-800">{selectedImage.title}</h3>
-                <p className="text-gray-600 mt-4">Image placeholder - akan diganti dengan foto asli</p>
+              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <img
+                  src={selectedImage.image}
+                  alt={selectedImage.altText}
+                  className="w-full h-auto"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://via.placeholder.com/1200x900.png?text=Photo';
+                  }}
+                />
+                <div className="p-6 text-center">
+                  <p className="text-sm text-[#5D9CEC] mb-2">{selectedImage.category}</p>
+                  <h3 className="text-2xl font-bold text-gray-800">{selectedImage.title}</h3>
+                </div>
               </div>
             </motion.div>
           </motion.div>

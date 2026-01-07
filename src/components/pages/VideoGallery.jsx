@@ -1,50 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Play } from 'lucide-react';
 
 const VideoGallery = () => {
-  const [videos, setVideos] = useState([]);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const load = async () => {
-      // Try public published JSON
-      try {
-        const res = await fetch('/data/published_videos.json', { cache: 'no-cache' });
-        if (res.ok) {
-          const json = await res.json();
-          const stored = Array.isArray(json) ? json : (json.items || []);
-          setVideos(stored.map((v, idx) => ({
-            id: v.id || idx,
-            title: v.title || 'Video Sekolah',
-            category: v.category || 'Umum',
-            embedId: v.url ? (v.url.split('embed/')[1] || v.url.split('v=')[1] || '').split('&')[0] : '',
-            description: v.description || '',
-            thumbnail: v.thumbnail || ''
-          })));
-          return;
-        }
-      } catch {}
-      // Fallback to localStorage
-      try {
-        const raw = localStorage.getItem('cms_videos_published');
-        const stored = raw ? JSON.parse(raw) : [];
-        setVideos(stored.map((v, idx) => ({
-          id: v.id || idx,
-          title: v.title || 'Video Sekolah',
-          category: v.category || 'Umum',
-          embedId: v.url ? (v.url.split('embed/')[1] || v.url.split('v=')[1] || '').split('&')[0] : '',
-          description: v.description || '',
-          thumbnail: v.thumbnail || ''
-        })));
-      } catch {
-        setVideos([]);
-      }
-    };
-    load();
-  }, []);
+  // STATIC VIDEO LIST - NO JSON/LOCALSTORAGE
+  const videos = [
+    { id: 1, title: 'Profil Sekolah', category: 'Profil', embedId: 'dQw4w9WgXcQ', description: 'Gambaran umum SMP Muhammadiyah 35 Jakarta.' },
+    { id: 2, title: 'Kegiatan Belajar', category: 'Akademik', embedId: 'ysz5S6PUM-U', description: 'Suasana belajar interaktif di kelas.' },
+    { id: 3, title: 'Ekstrakurikuler', category: 'Kegiatan', embedId: '3GwjfUFyY6M', description: 'Pilihan ekstrakurikuler untuk pengembangan siswa.' },
+    { id: 4, title: 'Prestasi Siswa', category: 'Prestasi', embedId: 'V-_O7nl0Ii0', description: 'Rangkaian prestasi siswa di berbagai bidang.' },
+    { id: 5, title: 'Tahfidz & Keagamaan', category: 'Keagamaan', embedId: 'a3Z7zEc7AXQ', description: 'Program tahfidz dan kegiatan keagamaan sekolah.' },
+    { id: 6, title: 'Fasilitas Sekolah', category: 'Fasilitas', embedId: 'eX2qFMC8cFo', description: 'Tur singkat fasilitas pendukung belajar.' }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E8F4F8] to-white pt-24 pb-20">

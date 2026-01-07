@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
-// HARDCODED STATIC STAFF LIST - NO JSON - NO FETCH - NO LOCALSTORAGE
+// HARDCODED STATIC STAFF LIST WITH DUMMY PHOTOS - NO JSON/LOCALSTORAGE
 const STAFF_MEMBERS = [
   { id: 1, name: 'Risyanti Khamidah, S.Pd', role: 'Kepala Sekolah' },
   { id: 2, name: 'Alwi Jamalulail, S.Pd.I', role: 'Wakasek Kurikulum' },
@@ -26,7 +26,11 @@ const STAFF_MEMBERS = [
   { id: 18, name: 'M. Mabrur Riyamasey Mas\'ud, S.Kom., S.H.', role: 'Staff Tata Usaha' },
   { id: 19, name: 'Hadi Prawoto', role: 'Pramubakti' },
   { id: 20, name: 'Ahmad Furqon', role: 'Pramubakti' }
-];
+].map((item) => ({
+  ...item,
+  image: `https://via.placeholder.com/600x720.png?text=${encodeURIComponent(item.name)}`,
+  altText: `${item.name} - ${item.role}`
+}));
 
 const StaffPage = () => {
   const navigate = useNavigate();
@@ -76,10 +80,17 @@ const StaffPage = () => {
               transition={{ duration: 0.5, delay: index * 0.05 }}
               className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group hover:-translate-y-2"
             >
-              <div className="aspect-square overflow-hidden bg-gradient-to-br from-[#D4E8F0] to-[#E8F4F8] flex items-center justify-center">
-                <div className="text-gray-400 text-6xl font-light">
-                  {staff.name.charAt(0)}
-                </div>
+              <div className="aspect-square overflow-hidden bg-gradient-to-br from-[#D4E8F0] to-[#E8F4F8]">
+                <img
+                  src={staff.image}
+                  alt={staff.altText}
+                  title={staff.altText}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://via.placeholder.com/600x720.png?text=Staff+Photo';
+                  }}
+                />
               </div>
               <div className="p-5 text-center">
                 <h3 className="font-poppins font-bold text-gray-800 text-lg mb-2">
