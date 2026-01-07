@@ -523,10 +523,27 @@ export const db = {
     const resp = await fetch('/api/ppdb/list.php');
     const json = await resp.json();
     if (!resp.ok) return [];
-    if (Array.isArray(json)) return json;
-    if (Array.isArray(json?.data)) return json.data;
-    if (Array.isArray(json?.data?.items)) return json.data.items;
-    return [];
+    const rows = Array.isArray(json)
+      ? json
+      : Array.isArray(json?.data)
+        ? json.data
+        : Array.isArray(json?.data?.items)
+          ? json.data.items
+          : [];
+
+    // Map backend fields to frontend-expected keys
+    return rows.map((r) => ({
+      id: r.id,
+      namaLengkap: r.nama ?? r.nama_lengkap ?? r.namaLengkap ?? '',
+      asalSekolah: r.asal_sekolah ?? r.asalSekolah ?? '',
+      orangTua: r.parent_name ?? r.orangTua ?? '',
+      nomorWA: r.whatsapp ?? r.nomorWA ?? '',
+      jenisRegistrasi: r.jenis ?? r.jenisRegistrasi ?? '',
+      tanggalLahir: r.tanggal_lahir ?? r.tanggalLahir ?? null,
+      status: r.status ?? 'new',
+      created_at: r.created_at ?? r.createdAt ?? null,
+      updated_at: r.updated_at ?? r.updatedAt ?? null,
+    }));
   },
 
   saveRegistrant: async (data) => {
