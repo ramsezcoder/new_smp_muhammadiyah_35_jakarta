@@ -18,5 +18,7 @@ $pdo->exec('CREATE TABLE IF NOT EXISTS ppdb_registrants (
 
 $stmt = $pdo->query('SELECT id, nama, asal_sekolah, parent_name, whatsapp, jenis, tanggal_lahir, status, created_at, updated_at FROM ppdb_registrants ORDER BY created_at DESC');
 $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-respond(true, '', $items);
+header('Content-Type: application/json; charset=utf-8');
+echo json_encode($items, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+exit;
 ?>
