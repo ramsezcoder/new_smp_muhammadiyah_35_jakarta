@@ -1,6 +1,16 @@
 <?php
 declare(strict_types=1);
 
+// --- Error logging to file (no display) ---
+$logDir = dirname(__DIR__) . '/logs';
+if (!is_dir($logDir)) {
+  @mkdir($logDir, 0755, true);
+}
+ini_set('log_errors', '1');
+ini_set('display_errors', '0');
+ini_set('error_log', $logDir . '/error.log');
+error_reporting(E_ALL);
+
 // Basic security and response headers
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');

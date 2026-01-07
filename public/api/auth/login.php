@@ -15,23 +15,26 @@ if ($email === '' || $password === '') {
 }
 
 try {
-  // Query user by email
+  error_log('LOGIN: start email=' . $email);
+
+  // Query user by email (prepared statement)
   $stmt = $pdo->prepare('SELECT id, name, email, password_hash, role, status FROM users WHERE email = ? LIMIT 1');
   $stmt->execute([$email]);
   $user = $stmt->fetch();
-  
+
   if (!$user) {
-    // User not found - don't reveal this for security
+    error_log('LOGIN: user not found for email ' . $email);
     respond(false, 'Invalid email or password', [], 401);
   }
-  
-  if (!password_verify($password, $user['password_hash'])) {
-    // Password mismatch
-    respond(false, 'Invalid email or password', [], 401);
-  }
-  
+
   if ($user['status'] !== 'active') {
+    error_log('LOGIN: user inactive email=' . $email . ' status=' . $user['status']);
     respond(false, 'Account is disabled. Contact administrator.', [], 403);
+  }
+
+  if (!password_verify($password, $user['password_hash'])) {
+    error_log('LOGIN: password mismatch for email ' . $email);
+    respond(false, 'Invalid email or password', [], 401);
   }
 
   // Create JWT token
@@ -49,24 +52,29 @@ try {
   $signature = rtrim(strtr(base64_encode(hash_hmac('sha256', $header . '.' . $payload, $config['jwt_secret'], true)), '+/', '-_'), '=');
   $token = $header . '.' . $payload . '.' . $signature;
 
-  // Log login attempt to sessions table if desired
+  // Log login attempt to sessions table (best effort)
   try {
     $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
     $ipAddress = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
     $expiresAt = date('Y-m-d H:i:s', time() + 60 * 60 * 6);
-    
+
     $sessionStmt = $pdo->prepare('
       INSERT INTO sessions (user_id, session_token, user_agent, ip_address, expires_at)
       VALUES (?, ?, ?, ?, ?)
     ');
     $sessionStmt->execute([$user['id'], $token, $userAgent, $ipAddress, $expiresAt]);
   } catch (Throwable $e) {
-    // Session logging is optional; don't fail login if it fails
-    error_log('Session insert failed: ' . $e->getMessage());
+    error_log('LOGIN: session insert failed: ' . $e->getMessage());
   }
 
-  // Update last_login timestamp
-  $pdo->prepare('UPDATE users SET last_login = NOW() WHERE id = ?')->execute([$user['id']]);
+  // Update last_login timestamp (best effort)
+  try {
+    $pdo->prepare('UPDATE users SET last_login = NOW() WHERE id = ?')->execute([$user['id']]);
+  } catch (Throwable $e) {
+    error_log('LOGIN: last_login update failed: ' . $e->getMessage());
+  }
+
+  error_log('LOGIN: success email=' . $email . ' role=' . $user['role']);
 
   respond(true, 'Login successful', [
     'token' => $token,
@@ -78,8 +86,8 @@ try {
     ]
   ]);
 } catch (Throwable $e) {
-  error_log('Login error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
-  error_log('Stack trace: ' . $e->getTraceAsString());
-  respond(false, 'Login failed: ' . $e->getMessage(), ['debug' => $e->getFile() . ':' . $e->getLine()], 500);
+  error_log('LOGIN: fatal error ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+  error_log('LOGIN: stack trace: ' . $e->getTraceAsString());
+  respond(false, 'Login failed. Please try again later.', [], 500);
 }
 ?>
