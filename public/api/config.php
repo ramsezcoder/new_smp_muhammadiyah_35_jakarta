@@ -3,9 +3,9 @@
 return [
   'db' => [
     'host' => getenv('DB_HOST') ?: 'localhost',
-    'name' => getenv('DB_NAME') ?: 'smpmuh35',
-    'user' => getenv('DB_USER') ?: 'dbuser',
-    'pass' => getenv('DB_PASS') ?: 'dbpass',
+    'name' => getenv('DB_NAME') ?: 'u541580780_smpmuh35',
+    'user' => getenv('DB_USER') ?: 'u541580780_smpmuh35',
+    'pass' => getenv('DB_PASS') ?: 'Muhammadiyah_35!!',
     'charset' => 'utf8mb4'
   ],
   'jwt_secret' => getenv('JWT_SECRET') ?: 'change-this-secret',
