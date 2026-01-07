@@ -54,9 +54,9 @@ try {
     $total = (int)$stmt->fetchColumn();
   }
   
-  // Get items
-  $sql = "SELECT id, title, slug, excerpt, featured_image, featured_image_alt, category, tags_json, status, seo_title, seo_description, author_name, published_at, created_at
-          FROM articles $where ORDER BY sort_order DESC, published_at DESC, id DESC LIMIT :limit OFFSET :offset";
+  // Get items - only select columns that exist in the table
+  $sql = "SELECT id, title, slug, excerpt, featured_image, category, tags_json, status, published_at, created_at
+          FROM articles $where ORDER BY published_at DESC, id DESC LIMIT :limit OFFSET :offset";
   $stmt = $pdo->prepare($sql);
   if (!$publishedOnly && $status !== 'all') {
     $stmt->bindValue(1, $status, PDO::PARAM_STR);
