@@ -18,7 +18,9 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
 
   const handleInput = () => {
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+      // Remove RTL control characters to force LTR text direction
+      const cleaned = editorRef.current.innerHTML.replace(/[\u200E\u200F\u202A-\u202E]/g, '');
+      onChange(cleaned);
     }
   };
 
@@ -83,8 +85,8 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
       <div
         ref={editorRef}
         dir="ltr"
-        className="min-h-[300px] p-4 focus:outline-none prose max-w-none text-gray-800 font-roboto"
-        style={{ direction: 'ltr', unicodeBidi: 'plaintext', textAlign: 'left' }}
+        className="min-h-[300px] p-4 focus:outline-none text-gray-800 font-roboto"
+        style={{ direction: 'ltr', unicodeBidi: 'bidi-override', textAlign: 'left' }}
         contentEditable
         onInput={handleInput}
         onFocus={() => setIsFocused(true)}
