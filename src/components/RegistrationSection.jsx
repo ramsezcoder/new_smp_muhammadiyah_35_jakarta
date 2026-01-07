@@ -72,25 +72,38 @@ const RegistrationSection = () => {
       // Continue with registration - honeypot and rate limit provide basic protection
     }
     
-    // Save to localStorage with proper timestamp
-    const registrants = JSON.parse(localStorage.getItem('registrants') || '[]');
-    const newRegistrant = {
-      ...formData,
-      id: Date.now(),
-      status: 'new',
-      createdAt: new Date().toISOString(),
-      registeredAt: Date.now()
-    };
-    registrants.push(newRegistrant);
-    localStorage.setItem('registrants', JSON.stringify(registrants));
-
-    setIsSuccess(true);
-    setLastSubmitAt(now);
-    setIsSubmitting(false);
-    toast({
-      title: "Pendaftaran Berhasil!",
-      description: "Silakan lanjutkan konfirmasi via WhatsApp.",
-    });
+    // Submit to backend API (no browser persistence)
+    try {
+      const resp = await fetch('/api/ppdb/submit.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          namaLengkap: formData.namaLengkap,
+          asalSekolah: formData.asalSekolah,
+          tanggalLahir: formData.tanggalLahir,
+          orangTua: formData.orangTua,
+          nomorWA: formData.nomorWA,
+          jenisRegistrasi: formData.jenisRegistrasi
+        })
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.success) {
+        throw new Error(data.message || 'Gagal menyimpan pendaftaran');
+      }
+      // Success: show confirmation only after server saved
+      setIsSuccess(true);
+      setLastSubmitAt(now);
+      setIsSubmitting(false);
+      setFormData({
+        namaLengkap: '', asalSekolah: '', tanggalLahir: '', orangTua: '', nomorWA: '', jenisRegistrasi: 'CPMB'
+      });
+      toast({ title: 'Pendaftaran Berhasil!', description: 'Silakan lanjutkan konfirmasi via WhatsApp.' });
+    } catch (err) {
+      console.error('PPDB submit error:', err);
+      setIsSubmitting(false);
+      toast({ title: 'Gagal', description: (err?.message || 'Terjadi kesalahan. Coba lagi nanti.') });
+      return;
+    }
   };
 
   const handleWhatsApp = () => {

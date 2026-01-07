@@ -518,27 +518,35 @@ export const db = {
 
   formatName,
 
-  // --- REGISTRANTS ---
-  getRegistrants: () => db._getData('registrants', []),
-  
-  saveRegistrant: (data) => {
-    const regs = db.getRegistrants();
-    if(data.id) {
-        const index = regs.findIndex(r => r.id === data.id);
-        regs[index] = { ...regs[index], ...data, updatedAt: new Date().toISOString() };
-    } else {
-        data.id = Date.now();
-        data.status = 'new';
-        data.createdAt = new Date().toISOString();
-        regs.push(data);
-    }
-    db._saveData('registrants', regs);
+  // --- REGISTRANTS (server-backed; no browser storage) ---
+  getRegistrants: async () => {
+    const resp = await fetch('/api/ppdb/list.php');
+    const json = await resp.json();
+    if (!resp.ok || !json.success) return [];
+    return json.data?.items || [];
   },
 
-  deleteRegistrant: (id, userId) => {
-    const regs = db.getRegistrants().filter(r => r.id !== id);
-    db._saveData('registrants', regs);
+  saveRegistrant: async (data) => {
+    const resp = await fetch('/api/ppdb/save.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const json = await resp.json();
+    if (!resp.ok || !json.success) throw new Error(json.message || 'Save failed');
+    return json.data;
+  },
+
+  deleteRegistrant: async (id, userId) => {
+    const resp = await fetch('/api/ppdb/delete.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+    const json = await resp.json();
+    if (!resp.ok || !json.success) throw new Error(json.message || 'Delete failed');
     db.logActivity(userId, 'DELETE_REGISTRANT', `Deleted registrant ID: ${id}`);
+    return true;
   },
 
   // --- SETTINGS ---
