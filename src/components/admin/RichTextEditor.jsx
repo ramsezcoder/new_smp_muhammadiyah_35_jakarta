@@ -82,6 +82,7 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
       {/* Editor Area */}
       <div
         ref={editorRef}
+        dir="ltr"
         className="min-h-[300px] p-4 focus:outline-none prose max-w-none text-gray-800 font-roboto"
         contentEditable
         onInput={handleInput}

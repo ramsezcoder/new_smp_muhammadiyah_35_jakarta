@@ -244,6 +244,7 @@ const NewsManager = ({ user, channel }) => {
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
               <label className="block text-sm font-medium text-gray-700 mb-2">Excerpt</label>
               <textarea
+                dir="ltr"
                 value={formData.excerpt}
                 onChange={e => setFormData({...formData, excerpt: e.target.value})}
                 className="w-full p-3 border rounded-xl h-24 text-sm"
@@ -364,6 +365,7 @@ const NewsManager = ({ user, channel }) => {
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Meta Description</label>
                   <textarea
+                    dir="ltr"
                     value={seoData.metaDescription}
                     onChange={e => setSeoData({...seoData, metaDescription: e.target.value.slice(0, 160)})}
                     className="w-full p-2 border rounded-lg text-sm h-16"
