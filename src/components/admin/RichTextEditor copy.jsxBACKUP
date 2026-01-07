@@ -1,64 +1,32 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, 
-  List, ListOrdered, Link, Quote, Undo, Redo 
-} from "lucide-react";
+  List, ListOrdered, Link, Image, Code, Quote, Type, Undo, Redo 
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const RichTextEditor = ({ value, onChange, placeholder }) => {
   const editorRef = useRef(null);
   const [isFocused, setIsFocused] = useState(false);
 
-  // Global sanitiser (hapus semua kontrol RTL)
-  const stripRTL = (str = "") =>
-    str.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, "");
-
-  // Inject value dari props ke editor (SELALU dibersihkan)
+  // Sync initial value
   useEffect(() => {
-    if (!editorRef.current) return;
-
-    const cleaned = stripRTL(value || "");
-
-    if (editorRef.current.innerHTML !== cleaned) {
-      editorRef.current.innerHTML = cleaned;
+    if (editorRef.current && value && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value;
     }
-  }, [value]);
+  }, []);
 
-  // Input handler
   const handleInput = () => {
-    if (!editorRef.current) return;
-
-    const html = editorRef.current.innerHTML;
-    const cleaned = stripRTL(html);
-
-    // Replace kembali di DOM supaya efek RTL hilang realtime
-    if (cleaned !== html) {
-      editorRef.current.innerHTML = cleaned;
-      placeCaretAtEnd(editorRef.current);
-    }
-
-    onChange(cleaned);
-  };
-
-  // Pastikan caret tetap di akhir setelah rewrite
-  const placeCaretAtEnd = (el) => {
-    const range = document.createRange();
-    const sel = window.getSelection();
-    range.selectNodeContents(el);
-    range.collapse(false);
-    sel.removeAllRanges();
-    sel.addRange(range);
-  };
-
-  // Disable shortcut RTL OS (Ctrl+Shift+Right/Left)
-  const handleKeyDown = (e) => {
-    if (e.ctrlKey && e.shiftKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
-      e.preventDefault();
+    if (editorRef.current) {
+      // Remove RTL control characters to force LTR text direction
+      const cleaned = editorRef.current.innerHTML.replace(/[\u200E\u200F\u202A-\u202E]/g, '');
+      onChange(cleaned);
     }
   };
 
   const execCommand = (command, value = null) => {
     document.execCommand(command, false, value);
-    editorRef.current?.focus();
+    editorRef.current.focus();
   };
 
   const ToolbarButton = ({ icon: Icon, command, arg = null, label }) => (
@@ -73,21 +41,14 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
   );
 
   return (
-    <div
-      className={`border rounded-xl overflow-hidden bg-white transition-all ${
-        isFocused
-          ? "border-[#5D9CEC] ring-2 ring-[#5D9CEC]/20"
-          : "border-gray-200"
-      }`}
-    >
+    <div className={`border rounded-xl overflow-hidden bg-white transition-all ${isFocused ? 'border-[#5D9CEC] ring-2 ring-[#5D9CEC]/20' : 'border-gray-200'}`}>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 p-2 border-b border-gray-100 bg-gray-50/50">
-
         <div className="flex items-center gap-1 border-r border-gray-200 pr-2 mr-1">
           <ToolbarButton icon={Undo} command="undo" label="Undo" />
           <ToolbarButton icon={Redo} command="redo" label="Redo" />
         </div>
-
+        
         <div className="flex items-center gap-1 border-r border-gray-200 pr-2 mr-1">
           <ToolbarButton icon={Bold} command="bold" label="Bold" />
           <ToolbarButton icon={Italic} command="italic" label="Italic" />
@@ -110,8 +71,8 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
           <button
             type="button"
             onClick={() => {
-              const url = prompt("Enter URL:");
-              if (url) execCommand("createLink", url);
+              const url = prompt('Enter URL:');
+              if (url) execCommand('createLink', url);
             }}
             className="p-2 text-gray-500 hover:text-[#5D9CEC] hover:bg-[#E8F4F8] rounded-lg transition-colors"
           >
@@ -120,22 +81,17 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
         </div>
       </div>
 
-      {/* Editor */}
+      {/* Editor Area */}
       <div
         ref={editorRef}
         dir="ltr"
         className="min-h-[300px] p-4 focus:outline-none text-gray-800 font-roboto"
-        style={{
-          direction: "ltr",
-          unicodeBidi: "bidi-override",
-          textAlign: "left",
-        }}
+        style={{ direction: 'ltr', unicodeBidi: 'bidi-override', textAlign: 'left' }}
         contentEditable
-        suppressContentEditableWarning
         onInput={handleInput}
-        onKeyDown={handleKeyDown}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
+        dangerouslySetInnerHTML={{ __html: value }}
       />
     </div>
   );
