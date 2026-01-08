@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileText, Users, Settings, LogOut, Menu, X, 
   Bell, Image, Layers, Video
 } from 'lucide-react';
-import { db } from '@/lib/db';
+import { apiVerify, apiLogout } from '@/lib/authApi';
 import AdminLogin from '@/components/AdminLogin';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -29,17 +29,44 @@ const AdminDashboard = ({ onLogout }) => {
 
   // Check session on mount
   useEffect(() => {
-    const session = db.getSession();
-    if (session) {
-      setUser(session.user);
+    const sessionStr = localStorage.getItem('app_session');
+    if (!sessionStr) return;
+    try {
+      const session = JSON.parse(sessionStr);
+      const token = session?.token;
+      if (!token) return;
+      (async () => {
+        try {
+          const verifiedUser = await apiVerify(token);
+          if (verifiedUser) {
+            setUser(verifiedUser);
+          } else {
+            localStorage.removeItem('app_session');
+          }
+        } catch (e) {
+          // On 401/403, clear session and force re-login
+          localStorage.removeItem('app_session');
+          setUser(null);
+        }
+      })();
+    } catch {
+      localStorage.removeItem('app_session');
     }
   }, []);
 
-  const handleLogout = () => {
-    db.logout();
+  const handleLogout = async () => {
+    try {
+      const sessionStr = localStorage.getItem('app_session');
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        const token = session?.token;
+        if (token) await apiLogout(token);
+      }
+    } catch {}
+    localStorage.removeItem('app_session');
     setUser(null);
     onLogout && onLogout();
-    toast({ title: "Logged Out", description: "See you next time!" });
+    toast({ title: 'Logged Out', description: 'See you next time!' });
   };
 
   if (!user) {

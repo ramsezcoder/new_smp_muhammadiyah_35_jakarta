@@ -2,9 +2,12 @@
 declare(strict_types=1);
 require __DIR__ . '/../_bootstrap.php';
 
+// SECURITY: Require authentication (Admin, Author, or Superadmin only)
+require_auth($config, ['Admin', 'Author', 'Superadmin']);
+
 // Only allow POST requests
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  respond(false, 'Invalid method', [], 405);
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+  respond(false, 'Method not allowed', [], 405);
 }
 
 // Check if file was uploaded
@@ -12,42 +15,51 @@ if (!isset($_FILES['featured_image'])) {
   respond(false, 'No file uploaded', [], 400);
 }
 
-$file = $_FILES['featured_image'];
-
-// Validate MIME type
-$allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-$finfo = finfo_open(FILEINFO_MIME_TYPE);
-$mimeType = finfo_file($finfo, $file['tmp_name']);
-finfo_close($finfo);
-
-if (!in_array($mimeType, $allowedTypes, true)) {
-  respond(false, 'Invalid file type. Only JPG, PNG, and WebP allowed', [], 400);
+// SECURITY: Use centralized validation helper
+$check = validate_image_upload($_FILES['featured_image']);
+if (!$check['ok']) {
+  respond(false, $check['error'], [], 400);
 }
 
-// Validate file size (max 4MB)
-if ($file['size'] > 4 * 1024 * 1024) {
-  respond(false, 'File too large. Maximum 4MB allowed', [], 400);
+// Use config-based upload directory
+$uploadDir = $config['uploads']['articles'] ?? '';
+if ($uploadDir === '') {
+  respond(false, 'Upload directory not configured', [], 500);
 }
 
-// Generate unique filename
-$ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-$filename = uniqid('img_', true) . '.' . $ext;
-
-// Ensure upload directory exists
-$uploadDir = __DIR__ . '/../../uploads/articles';
+// Ensure upload directory exists and is writable
 if (!is_dir($uploadDir)) {
-  mkdir($uploadDir, 0755, true);
+  if (!@mkdir($uploadDir, 0755, true)) {
+    respond(false, 'Failed to create upload directory', [], 500);
+  }
 }
 
-$destination = $uploadDir . '/' . $filename;
+if (!is_writable($uploadDir)) {
+  respond(false, 'Upload directory not writable', [], 500);
+}
+
+// SECURITY: Ensure .htaccess protection exists
+$htaccessPath = rtrim($uploadDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . '.htaccess';
+if (!is_file($htaccessPath)) {
+  $htaccessContent = "Options -Indexes\nphp_flag engine off\n<FilesMatch \"\\.(php|phtml|php5|phar)$\">\n  Require all denied\n</FilesMatch>\n";
+  if (!@file_put_contents($htaccessPath, $htaccessContent)) {
+    respond(false, 'Failed to create security protection', [], 500);
+  }
+}
+
+// Generate unique filename using centralized helper
+$pathinfo = pathinfo($_FILES['featured_image']['name']);
+$ext = strtolower($pathinfo['extension'] ?? 'jpg');
+$baseSlug = 'article-image-' . time();
+[$filename, $destination] = unique_filename($uploadDir, $baseSlug, $ext);
 
 // Move uploaded file
-if (!move_uploaded_file($file['tmp_name'], $destination)) {
+if (!move_uploaded_file($_FILES['featured_image']['tmp_name'], $destination)) {
   respond(false, 'Failed to save file', [], 500);
 }
 
 // Return success with file info
 respond(true, 'Image uploaded successfully', [
   'filename' => $filename,
-  'url' => '/uploads/articles/' . $filename
+  'url' => uploads_url_path('articles') . '/' . $filename
 ]);

@@ -1,22 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, User, ArrowRight } from 'lucide-react';
-import { fetchNewsWithFallback } from '@/lib/fetchWithFallback';
+import { fetchNews } from '@/lib/fetchWithFallback';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1509062522246-3755977927d7';
 
 const NewsSection = () => {
   const [activeTab, setActiveTab] = useState('school'); // 'school' or 'student'
   const [articles, setArticles] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
-    fetchNewsWithFallback(activeTab, { limit: 4, page: 1 })
+    fetchNews(activeTab, { limit: 4, page: 1 })
       .then(({ items }) => {
-        if (isMounted) setArticles(items.slice(0, 4));
+        if (isMounted) {
+          setArticles(items.slice(0, 4));
+          setError(null);
+        }
       })
-      .catch(() => {
-        if (isMounted) setArticles([]);
+      .catch((err) => {
+        if (isMounted) {
+          setArticles([]);
+          setError(err?.message || 'Gagal memuat berita');
+        }
       });
 
     return () => {
@@ -67,7 +74,11 @@ const NewsSection = () => {
         {/* Desktop Grid / Mobile Carousel */}
         <div className="flex overflow-x-auto gap-4 pb-6 -mx-4 px-4 md:grid md:grid-cols-2 md:gap-8 md:pb-0 md:mx-0 md:px-0 snap-x snap-mandatory scrollbar-hide">
           <AnimatePresence mode="popLayout">
-            {articles.length > 0 ? articles.map((article) => (
+            {error ? (
+              <div className="col-span-2 text-center py-12 text-red-500">
+                {error}
+              </div>
+            ) : articles.length > 0 ? articles.map((article) => (
               <motion.div
                 key={article.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -125,9 +136,9 @@ const NewsSection = () => {
                 </div>
               </motion.div>
             )) : (
-                <div className="col-span-2 text-center py-12 text-gray-400">
-                    No articles found for this category.
-                </div>
+              <div className="col-span-2 text-center py-12 text-gray-400">
+                Tidak ada artikel untuk kategori ini.
+              </div>
             )}
           </AnimatePresence>
         </div>

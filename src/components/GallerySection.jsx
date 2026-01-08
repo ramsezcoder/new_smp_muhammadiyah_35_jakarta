@@ -1,11 +1,39 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ZoomIn, Image as ImageIcon } from 'lucide-react';
-import { GALLERY_PHOTOS } from '@/data/galleryPhotos';
+import { listGallery } from '@/lib/galleryApi';
 
 const GallerySection = () => {
   const [selectedImage, setSelectedImage] = useState(null);
-  const galleryImages = GALLERY_PHOTOS.slice(0, 6);
+  const [galleryImages, setGalleryImages] = useState([]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      try {
+        const data = await listGallery({ includeUnpublished: false, limit: 12 });
+        const items = (data.items || []).map((it) => ({
+          id: it.id,
+          image: it.url,
+          title: it.title,
+          description: it.alt_text || it.title,
+          altText: it.alt_text || it.title,
+        }));
+        if (isMounted) {
+          setGalleryImages(items.slice(0, 6));
+          setError(null);
+        }
+      } catch (e) {
+        if (isMounted) {
+          setError(e?.message || 'Gagal memuat galeri');
+          setGalleryImages([]);
+        }
+      }
+    };
+    load();
+    return () => { isMounted = false; };
+  }, []);
 
   return (
     <section id="gallery" className="py-12 md:py-24 bg-white">
@@ -26,38 +54,44 @@ const GallerySection = () => {
           </h2>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {galleryImages.map((image, index) => (
-            <motion.div
-              key={image.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="relative group cursor-pointer overflow-hidden rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 aspect-[4/3]"
-              onClick={() => setSelectedImage(image)}
-            >
-              <img
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                alt={image.altText || image.title}
-                title={image.title}
-                src={image.image}
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#5D9CEC]/90 via-[#5D9CEC]/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6">
-                <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                  <h3 className="text-white font-bold text-lg mb-1">{image.title}</h3>
-                  <p className="text-white/90 text-sm font-light">{image.description}</p>
-                </div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 scale-0 group-hover:scale-100 transition-transform duration-300 delay-100">
-                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
-                    <ZoomIn className="w-6 h-6 text-[#5D9CEC]" />
+        {error ? (
+          <div className="text-center text-red-500 py-8">{error}</div>
+        ) : galleryImages.length === 0 ? (
+          <div className="text-center text-gray-500 py-8">Belum ada foto yang dipublikasikan.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            {galleryImages.map((image, index) => (
+              <motion.div
+                key={image.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="relative group cursor-pointer overflow-hidden rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 aspect-[4/3]"
+                onClick={() => setSelectedImage(image)}
+              >
+                <img
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  alt={image.altText || image.title}
+                  title={image.title}
+                  src={image.image}
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#5D9CEC]/90 via-[#5D9CEC]/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6">
+                  <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                    <h3 className="text-white font-bold text-lg mb-1">{image.title}</h3>
+                    <p className="text-white/90 text-sm font-light">{image.description}</p>
+                  </div>
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 scale-0 group-hover:scale-100 transition-transform duration-300 delay-100">
+                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
+                      <ZoomIn className="w-6 h-6 text-[#5D9CEC]" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         <div className="text-center mt-8">
           <a

@@ -1,9 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, User, ArrowRight } from 'lucide-react';
-import { db } from '@/lib/db';
-import { fetchNewsWithFallback } from '@/lib/fetchWithFallback';
-import { MESSAGES } from '@/config/staticMode';
+import { fetchNews } from '@/lib/fetchWithFallback';
 
 const PAGE_SIZE = 9;
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1509062522246-3755977927d7';
@@ -92,28 +90,16 @@ const NewsListPage = ({ initialCategory = 'school', initialPage = 1, onStateChan
 
     const fetchData = async () => {
       try {
-        const allNews = await fetchNewsWithFallback(activeTab, 3000);
+        const { items: fetchedItems, pagination } = await fetchNews(activeTab, { page, limit: PAGE_SIZE });
         if (isCancelled) return;
-        const start = (page - 1) * PAGE_SIZE;
-        const paged = allNews.slice(start, start + PAGE_SIZE);
-        setItems(paged);
-        setTotalPages(Math.max(1, Math.ceil(allNews.length / PAGE_SIZE)));
-        
-        // Check if this came from fallback by attempting API call
-        try {
-          await fetch(`/api/news/list?category=${activeTab}`, { signal: AbortSignal.timeout(2000) });
-        } catch {
-          setError(MESSAGES.FALLBACK_NEWS);
-        }
+        setItems(fetchedItems);
+        setTotalPages(Math.max(1, pagination?.pages || 1));
+        setError(null);
       } catch (err) {
         if (isCancelled) return;
-        setError(MESSAGES.FALLBACK_NEWS);
-        const all = db.getNews().filter(
-          n => n.status === 'published' && (!n.channel || n.channel === activeTab)
-        );
-        const start = (page - 1) * PAGE_SIZE;
-        setItems(all.slice(start, start + PAGE_SIZE));
-        setTotalPages(Math.max(1, Math.ceil(all.length / PAGE_SIZE)));
+        setError(err?.message || 'Gagal memuat berita');
+        setItems([]);
+        setTotalPages(1);
       } finally {
         if (!isCancelled) setLoading(false);
       }

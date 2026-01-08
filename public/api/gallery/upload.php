@@ -28,6 +28,13 @@ $baseSlug = slugify($title !== '' ? $title : ($pathinfo['filename'] ?? 'image'))
 [$filename, $target] = unique_filename($config['uploads']['gallery'], $baseSlug, $ext);
 
 try {
+  // SECURITY: Ensure .htaccess protection exists in gallery directory
+  $htaccessPath = rtrim($config['uploads']['gallery'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . '.htaccess';
+  if (!is_file($htaccessPath)) {
+    $htaccessContent = "Options -Indexes\nphp_flag engine off\n<FilesMatch \"\\.(php|phtml|php5|phar)$\">\n  Require all denied\n</FilesMatch>\n";
+    @file_put_contents($htaccessPath, $htaccessContent);
+  }
+  
   if (!move_uploaded_file($_FILES['image']['tmp_name'], $target)) {
     respond(false, 'Failed to save file', [], 500);
   }

@@ -5,18 +5,18 @@ require __DIR__ . '/../_bootstrap.php';
 // Get current user via token to validate logout request
 $user = require_auth($config);
 
-// Optional: Delete session from database if using sessions table
+// PHASE 7: Revoke session token server-side
 try {
   $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
   if (preg_match('/Bearer\s+(.*)$/i', $auth, $m)) {
     $token = $m[1];
-    // Optionally log token to blacklist or delete from sessions table
-    // For JWT, expiration is client-side, so no server-side cleanup needed
-    // But if using sessions table, you could:
-    // $pdo->prepare('DELETE FROM sessions WHERE user_id = ?')->execute([$user['sub']]);
+    $stmt = $pdo->prepare('DELETE FROM sessions WHERE session_token = ?');
+    $stmt->execute([$token]);
+    error_log('LOGOUT: Token revoked for user_id=' . $user['sub'] . ' affected_rows=' . $stmt->rowCount());
   }
 } catch (Throwable $e) {
-  // Token validation already happened in require_auth
+  // Log but don't block logout
+  error_log('LOGOUT: Session revoke failed: ' . $e->getMessage());
 }
 
 respond(true, 'Logged out successfully', []);

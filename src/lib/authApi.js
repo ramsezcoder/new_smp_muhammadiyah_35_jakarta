@@ -1,3 +1,5 @@
+import { assertApiOk } from '@/lib/utils';
+
 export async function apiLogin(email, password) {
   const res = await fetch('/api/auth/login.php', {
     method: 'POST',
@@ -5,9 +7,7 @@ export async function apiLogin(email, password) {
     body: JSON.stringify({ email, password }),
     credentials: 'include'
   });
-  if (!res.ok) throw new Error(`Login failed: ${res.status}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Login failed');
+  const json = await assertApiOk(res, 'Login failed');
   return json.data;
 }
 
@@ -16,7 +16,14 @@ export async function apiVerify(token) {
     headers: { Authorization: `Bearer ${token}` }, 
     credentials: 'include' 
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    // Explicitly fail-closed on non-200; throw for 401/403 to trigger logout
+    const status = res.status;
+    if (status === 401 || status === 403) {
+      throw new Error('Unauthorized');
+    }
+    return null;
+  }
   const json = await res.json();
   return json.success ? json.data.user : null;
 }
@@ -31,8 +38,7 @@ export async function apiLogout(token) {
     if (!res.ok) return false;
     const json = await res.json();
     return json.success;
-  } catch (e) {
-    console.error('Logout error:', e);
+  } catch {
     return false;
   }
 }

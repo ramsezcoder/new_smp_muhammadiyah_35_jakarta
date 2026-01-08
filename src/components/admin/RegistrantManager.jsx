@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Trash2 } from 'lucide-react';
-import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
+import { listRegistrants, deleteRegistrant } from '@/lib/ppdbApi';
 
 const RegistrantManager = ({ user }) => {
   const [registrants, setRegistrants] = useState([]);
@@ -10,18 +10,27 @@ const RegistrantManager = ({ user }) => {
 
   useEffect(() => {
     (async () => {
-      const rows = await db.getRegistrants();
-      setRegistrants(Array.isArray(rows) ? rows : []);
+      try {
+        const rows = await listRegistrants();
+        setRegistrants(rows);
+      } catch (e) {
+        setRegistrants([]);
+        toast({ variant: 'destructive', title: 'Gagal memuat registrants', description: e.message || 'Terjadi kesalahan' });
+      }
     })();
-  }, []);
+  }, [toast]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this registrant?')) return;
 
-    await db.deleteRegistrant(id, user.id);
-
-    const rows = await db.getRegistrants();
-    setRegistrants(Array.isArray(rows) ? rows : []);
+    try {
+      await deleteRegistrant(id);
+      const rows = await listRegistrants();
+      setRegistrants(rows);
+      toast({ title: 'Data dihapus', description: 'Registran berhasil dihapus' });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Gagal menghapus', description: e.message || 'Terjadi kesalahan' });
+    }
   };
 
   const handleExport = () => {
@@ -29,13 +38,13 @@ const RegistrantManager = ({ user }) => {
     const csvContent = [
       headers.join(','),
       ...registrants.map(r => {
-          const date = r.tanggalLahir ? 
-            new Date(r.tanggalLahir).toLocaleDateString('id-ID', {
+          const date = r.tanggal_lahir ? 
+            new Date(r.tanggal_lahir).toLocaleDateString('id-ID', {
             day: '2-digit',
             month: 'long',
               year: 'numeric'
           }) : '-';
-        return [r.namaLengkap, r.asalSekolah || '-', r.orangTua, r.nomorWA, r.jenisRegistrasi || '-', date].join(',');
+        return [r.nama, r.asal_sekolah || '-', r.parent_name, r.whatsapp, r.jenis || '-', date].join(',');
       })
     ].join('\n');
     
@@ -73,18 +82,18 @@ const RegistrantManager = ({ user }) => {
           <tbody className="divide-y divide-gray-100">
             {registrants.map((reg) => (
               <tr key={reg.id} className="hover:bg-gray-50/50">
-                <td className="p-4 font-medium text-gray-800">{reg.namaLengkap}</td>
-                <td className="p-4 text-gray-500">{reg.asalSekolah || '-'}</td>
-                <td className="p-4 text-gray-500">{reg.orangTua}</td>
-                <td className="p-4 text-gray-500">{reg.nomorWA}</td>
+                <td className="p-4 font-medium text-gray-800">{reg.nama}</td>
+                <td className="p-4 text-gray-500">{reg.asal_sekolah || '-'}</td>
+                <td className="p-4 text-gray-500">{reg.parent_name}</td>
+                <td className="p-4 text-gray-500">{reg.whatsapp}</td>
                 <td className="p-4 text-gray-500">
                   <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                    {reg.jenisRegistrasi || 'CPMB'}
+                    {reg.jenis || 'CPMB'}
                   </span>
                 </td>
                 <td className="p-4 text-gray-500">
-                    {reg.tanggalLahir ? 
-                      new Date(reg.tanggalLahir).toLocaleDateString('id-ID', {
+                    {reg.tanggal_lahir ? 
+                      new Date(reg.tanggal_lahir).toLocaleDateString('id-ID', {
                       day: '2-digit',
                       month: 'long',
                         year: 'numeric'

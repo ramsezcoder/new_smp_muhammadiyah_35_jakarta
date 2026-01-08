@@ -1,27 +1,6 @@
 @echo off
 echo ===================================
-echo SMP Muhammadiyah 35 Backend Setup
+echo Legacy Node/Express backend is deprecated and disabled.
+echo PHP is the sole backend. Run your PHP server (e.g., php -S localhost:8000 -t public) and set VITE_API_TARGET if needed.
 echo ===================================
-echo.
-
-cd server
-
-if not exist node_modules (
-    echo Installing dependencies...
-    call npm install
-    echo.
-)
-
-if not exist .env (
-    echo Creating .env from template...
-    copy .env.example .env
-    echo.
-    echo IMPORTANT: Edit server/.env and add your RECAPTCHA_SECRET_KEY
-    echo Get your key from: https://www.google.com/recaptcha/admin
-    echo.
-    pause
-)
-
-echo Starting backend server...
-echo.
-call npm start
+exit /b 1

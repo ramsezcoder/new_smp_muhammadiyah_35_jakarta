@@ -4,8 +4,6 @@ import { Upload, Trash2, Pencil, GripVertical, CheckCircle2, XCircle } from 'luc
 import { useToast } from '@/components/ui/use-toast';
 import { validateImageFile } from '@/lib/api-utils';
 import { listStaff, createStaff, updateStaff, deleteStaff, reorderStaff } from '@/lib/staffApi';
-import { staffStorage } from '@/lib/staticStorage';
-import { MESSAGES } from '@/config/staticMode';
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 4 * 1024 * 1024;
@@ -46,39 +44,6 @@ const StaffManager = ({ user }) => {
     };
     load();
   }, []);
-
-  const handleImportDefaults = () => {
-    try {
-      const existing = staffStorage.getAll();
-      if (existing.length > 0) {
-        toast({ title: 'Import dilewati', description: 'Data default sudah pernah diimport' });
-        return;
-      }
-      
-      const defaultStaff = {
-        name: 'John Doe',
-        position: 'Kepala Sekolah',
-        role: 'Kepala Sekolah',
-        photo: '/placeholder-staff.jpg',
-        photoUrl: '/placeholder-staff.jpg',
-        image: '/placeholder-staff.jpg',
-        active: true
-      };
-      
-      staffStorage.add(defaultStaff);
-      const updatedStaff = staffStorage.getAll();
-      setStaff(updatedStaff);
-      
-      toast({ title: 'Import berhasil', description: 'Ditambahkan 1 profil' });
-    } catch (err) {
-      console.error('[StaffManager] Import failed:', err);
-      toast({ 
-        variant: 'destructive', 
-        title: 'Gagal import', 
-        description: MESSAGES.OPERATION_FAILED 
-      });
-    }
-  };
 
   const toDataUrl = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -140,14 +105,14 @@ const StaffManager = ({ user }) => {
       const updated = await listStaff({ includeUnpublished: true });
       const items = (updated.items || []).map(s => ({ id: s.id, name: s.name, position: s.role, role: s.role, photo: s.photo_url, photoPreview: s.photo_url, active: !!s.is_published, bio: s.bio || '' }));
       setStaff(items);
-      toast({ title: 'Profil ditambahkan', description: MESSAGES.OPERATION_SUCCESS });
+      toast({ title: 'Profil ditambahkan', description: 'Operasi berhasil' });
       resetForm();
     } catch (err) {
       console.error('[StaffManager] Submit failed:', err);
       toast({ 
         variant: 'destructive', 
         title: 'Gagal menyimpan', 
-        description: MESSAGES.OPERATION_FAILED
+        description: err.message || 'Operasi gagal'
       });
     }
   };
@@ -226,20 +191,14 @@ const StaffManager = ({ user }) => {
           <p className="text-gray-600">Tambah, edit, hapus, dan atur urutan guru & karyawan.</p>
         </div>
         <div className="flex items-center gap-2">
-          {staff.length === 0 && (
+          {staff.length > 0 && (
             <button
-              onClick={handleImportDefaults}
-              className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 font-medium transition-colors"
+              onClick={handlePublish}
+              className="px-4 py-2 text-sm bg-[#5D9CEC] hover:bg-[#4A89DC] text-white rounded-lg font-medium transition-colors"
             >
-              Import Data Default
+              Publish Staff
             </button>
           )}
-          <button
-            onClick={handlePublish}
-            className="px-4 py-2 text-sm bg-[#5D9CEC] hover:bg-[#4A89DC] text-white rounded-lg font-medium transition-colors"
-          >
-            Publish Staff
-          </button>
           <button
             onClick={resetForm}
             className="text-sm text-gray-500 hover:text-gray-700"

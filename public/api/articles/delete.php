@@ -7,10 +7,27 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 }
 
 // Auth: only Admin/Author/Superadmin can delete
-require_auth($config, ['Admin','Author','Superadmin']);
+$user = require_auth($config, ['Admin','Author','Superadmin']);
 
+// PHASE 7: Enforce Author ownership (Author cannot delete others' articles)
 $input = json_decode(file_get_contents('php://input') ?: 'null', true) ?: [];
 $id = (int)($input['id'] ?? 0);
+
+if ($user['role'] === 'Author') {
+  // Check if article exists and belongs to this author
+  $ownershipStmt = $pdo->prepare('SELECT author_id FROM articles WHERE id = ?');
+  $ownershipStmt->execute([$id]);
+  $ownershipRow = $ownershipStmt->fetch();
+  
+  if (!$ownershipRow) {
+    respond(false, 'Article not found', [], 404);
+  }
+  
+  if ((int)$ownershipRow['author_id'] !== (int)$user['sub']) {
+    error_log('OWNERSHIP DENIED: user_id=' . $user['sub'] . ' attempted to delete article_id=' . $id . ' owned by user_id=' . $ownershipRow['author_id']);
+    respond(false, 'You can only delete your own articles', [], 403);
+  }
+}
 if ($id <= 0) {
   respond(false, 'Invalid id', [], 400);
 }

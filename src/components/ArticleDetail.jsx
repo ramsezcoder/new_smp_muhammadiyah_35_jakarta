@@ -5,12 +5,10 @@ import {
   Calendar, Clock, User, ArrowLeft, Facebook, Twitter, Link as LinkIcon, 
   Instagram, Send, MessageCircle 
 } from 'lucide-react';
-import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { SITE_INFO, getBreadcrumbSchema, getOrganizationSchema, getShareUrls } from '@/lib/seo-utils';
-import { fetchArticleWithFallback } from '@/lib/fetchWithFallback';
-import { MESSAGES } from '@/config/staticMode';
+import { fetchArticle } from '@/lib/fetchWithFallback';
 
 const ArticleDetail = ({ articleId, slugParam, onBack }) => {
   const { toast } = useToast();
@@ -25,50 +23,21 @@ const ArticleDetail = ({ articleId, slugParam, onBack }) => {
 
   useEffect(() => {
     let isMounted = true;
-
-    const fallbackFromDb = () => {
-      const news = db.getNews();
-      let found = null;
-
-      if (resolvedId) {
-        found = news.find((n) => n.id === resolvedId);
-      }
-
-      if (!found && resolvedSlug) {
-        found = news.find((n) => (n.seo?.slug || n.slug) === resolvedSlug) || news.find((n) => String(n.id) === resolvedSlug);
-      }
-
-      return found || news[0] || null;
-    };
-
     const fetchArticle = async () => {
       setLoading(true);
       setError(null);
       try {
-        let record = null;
-
-        // Try API first
-        if (resolvedSlug) {
-          record = await fetchArticleWithFallback(resolvedSlug, 3000);
-        }
-
-        // Fallback to db if no record found
-        if (!record) {
-          record = fallbackFromDb();
-        }
-
-        if (!record) throw new Error('Article not found');
-
+        if (!resolvedSlug && !resolvedId) throw new Error('Artikel tidak ditemukan');
+        const record = await fetchArticle(resolvedSlug, 3000);
+        if (!record) throw new Error('Artikel tidak ditemukan');
         if (isMounted) {
           setArticle(record);
           console.log('news_viewed', record.slug || resolvedSlug || record.id);
         }
       } catch (err) {
-        console.warn('[news] detail fetch failed', err);
-        const fallback = fallbackFromDb();
         if (isMounted) {
-          setError(MESSAGES.FALLBACK_ARTICLE);
-          setArticle(fallback);
+          setError(err?.message || 'Gagal memuat artikel');
+          setArticle(null);
         }
       } finally {
         if (isMounted) {
@@ -134,7 +103,7 @@ const ArticleDetail = ({ articleId, slugParam, onBack }) => {
     url: articleUrl
   } : null;
 
-  if (loading || !article) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-white pt-24 pb-20">
         <Helmet>
@@ -154,6 +123,23 @@ const ArticleDetail = ({ articleId, slugParam, onBack }) => {
               <div className="h-4 w-5/6 bg-gray-100 rounded" />
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!article) {
+    return (
+      <div className="min-h-screen bg-white pt-24 pb-20">
+        <Helmet>
+          <html lang="id" />
+          <title>{computedTitle}</title>
+          <meta name="description" content={metaDescription} />
+          <link rel="canonical" href={articleUrl} />
+        </Helmet>
+        <div className="container mx-auto px-4 max-w-3xl text-center text-red-500">
+          <p className="mb-4">{error || 'Artikel tidak dapat dimuat'}</p>
+          <button onClick={() => navigate('/news')} className="text-[#5D9CEC] underline">Kembali ke berita</button>
         </div>
       </div>
     );

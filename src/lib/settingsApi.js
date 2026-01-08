@@ -1,40 +1,21 @@
-// Helper to get Authorization headers with Bearer token
-function getHeaders() {
-  const sessionStr = localStorage.getItem('app_session');
-  const headers = { 'Content-Type': 'application/json' };
-  if (sessionStr) {
-    try {
-      const session = JSON.parse(sessionStr);
-      if (session.token) {
-        headers['Authorization'] = `Bearer ${session.token}`;
-      }
-    } catch (e) {
-      console.error('Failed to parse session:', e);
-    }
-  }
-  return headers;
-}
+import { getAuthHeaders, assertApiOk } from '@/lib/utils';
 
 export async function getSettings() {
   const res = await fetch('/api/settings/get.php', { 
-    headers: getHeaders(),
+    headers: getAuthHeaders('application/json'),
     credentials: 'include' 
   });
-  if (!res.ok) throw new Error(`Get settings failed: ${res.status}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Get settings failed');
+  const json = await assertApiOk(res, 'Get settings failed');
   return json.data.settings || {};
 }
 
 export async function updateSettings(settings) {
   const res = await fetch('/api/settings/update.php', {
     method: 'POST',
-    headers: getHeaders(),
+    headers: getAuthHeaders('application/json'),
     body: JSON.stringify(settings),
     credentials: 'include'
   });
-  if (!res.ok) throw new Error(`Update settings failed: ${res.status}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Update settings failed');
+  await assertApiOk(res, 'Update settings failed');
   return true;
 }

@@ -1,19 +1,4 @@
-// Helper to get Authorization headers with Bearer token
-function getHeaders() {
-  const sessionStr = localStorage.getItem('app_session');
-  const headers = { 'Content-Type': 'application/json' };
-  if (sessionStr) {
-    try {
-      const session = JSON.parse(sessionStr);
-      if (session.token) {
-        headers['Authorization'] = `Bearer ${session.token}`;
-      }
-    } catch (e) {
-      console.error('Failed to parse session:', e);
-    }
-  }
-  return headers;
-}
+import { getAuthHeaders, assertApiOk } from '@/lib/utils';
 
 export async function listStaff({ page = 1, limit = 100, includeUnpublished = true } = {}) {
   const params = new URLSearchParams();
@@ -21,12 +6,10 @@ export async function listStaff({ page = 1, limit = 100, includeUnpublished = tr
   params.set('limit', String(limit));
   params.set('published', includeUnpublished ? '0' : '1');
   const res = await fetch(`/api/staff/list.php?${params.toString()}`, { 
-    headers: getHeaders(),
+    headers: getAuthHeaders('application/json'),
     credentials: 'include' 
   });
-  if (!res.ok) throw new Error(`List failed: ${res.status}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'List failed');
+  const json = await assertApiOk(res, 'List failed');
   return json.data;
 }
 
@@ -37,18 +20,14 @@ export async function createStaff({ name, role, bio, photo }) {
   if (bio) form.append('bio', bio);
   if (photo) form.append('photo', photo);
   
-  const headers = getHeaders();
-  delete headers['Content-Type']; // FormData sets this automatically
-  
+  const headers = getAuthHeaders(null);
   const res = await fetch('/api/staff/create.php', { 
     method: 'POST', 
     body: form,
     headers,
     credentials: 'include' 
   });
-  if (!res.ok) throw new Error(`Create failed: ${res.status}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Create failed');
+  const json = await assertApiOk(res, 'Create failed');
   return json.data;
 }
 
@@ -61,43 +40,35 @@ export async function updateStaff({ id, name, role, bio, photo, keepPhoto = true
   form.append('keep_photo', keepPhoto ? '1' : '0');
   if (photo) form.append('photo', photo);
   
-  const headers = getHeaders();
-  delete headers['Content-Type'];
-  
+  const headers = getAuthHeaders(null);
   const res = await fetch('/api/staff/update.php', { 
     method: 'POST', 
     body: form,
     headers,
     credentials: 'include' 
   });
-  if (!res.ok) throw new Error(`Update failed: ${res.status}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Update failed');
+  const json = await assertApiOk(res, 'Update failed');
   return json.data;
 }
 
 export async function deleteStaff(id) {
   const res = await fetch('/api/staff/delete.php', {
     method: 'POST',
-    headers: getHeaders(),
+    headers: getAuthHeaders('application/json'),
     body: JSON.stringify({ id }),
     credentials: 'include'
   });
-  if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Delete failed');
+  await assertApiOk(res, 'Delete failed');
   return true;
 }
 
 export async function reorderStaff(ids) {
   const res = await fetch('/api/staff/reorder.php', {
     method: 'POST',
-    headers: getHeaders(),
+    headers: getAuthHeaders('application/json'),
     body: JSON.stringify({ ids }),
     credentials: 'include'
   });
-  if (!res.ok) throw new Error(`Reorder failed: ${res.status}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Reorder failed');
+  await assertApiOk(res, 'Reorder failed');
   return true;
 }

@@ -6,8 +6,7 @@ import { Clock, User, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { SITE_INFO } from '@/lib/seo-utils';
 import { getCategoryParam, getIntParam } from '@/utils/query';
-import { fetchNewsWithFallback } from '@/lib/fetchWithFallback';
-import { MESSAGES } from '@/config/staticMode';
+import { fetchNews } from '@/lib/fetchWithFallback';
 
 const PAGE_SIZE = 9;
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1509062522246-3755977927d7';
@@ -103,11 +102,11 @@ const NewsListPage = () => {
     setSearchParams({ category: cat, page: String(currentPage) });
   };
 
-  const fetchNews = async (cat, currentPage) => {
+  const fetchNewsData = async (cat, currentPage) => {
     setLoading(true);
     setError(null);
     try {
-      const { items: fetchedItems, pagination } = await fetchNewsWithFallback(cat, {
+      const { items: fetchedItems, pagination } = await fetchNews(cat, {
         page: currentPage,
         limit: PAGE_SIZE,
       });
@@ -117,7 +116,7 @@ const NewsListPage = () => {
       setPage(pagination?.page || currentPage);
     } catch (err) {
       console.warn('[news] fetch failed:', err);
-      setError(MESSAGES.FALLBACK_NEWS);
+      setError(err?.message || 'Gagal memuat berita');
       setItems([]);
       setTotalPages(1);
     } finally {
@@ -128,7 +127,7 @@ const NewsListPage = () => {
   useEffect(() => {
     if (fetchTimer.current) clearTimeout(fetchTimer.current);
     fetchTimer.current = setTimeout(() => {
-      fetchNews(category, page).then(() => {
+      fetchNewsData(category, page).then(() => {
         updateSearchParams(category, page);
       });
     }, 120);

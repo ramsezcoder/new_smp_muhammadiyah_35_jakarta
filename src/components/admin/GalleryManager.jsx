@@ -2,9 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Trash2, Image, Loader, Pencil, GripVertical, Eye, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { db } from '@/lib/db';
 import { listGallery, uploadGallery, deleteGallery, reorderGallery, updateGalleryMeta } from '@/lib/galleryApi';
-import { MESSAGES } from '@/config/staticMode';
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 4 * 1024 * 1024;
@@ -89,7 +87,7 @@ const GalleryManager = ({ user }) => {
       if (added) toast({ title: 'Upload berhasil', description: `${added} gambar disimpan` });
     } catch (err) {
       console.error('[GalleryManager] Upload failed:', err);
-      toast({ variant: 'destructive', title: 'Upload gagal', description: err.message || MESSAGES.OPERATION_FAILED });
+      toast({ variant: 'destructive', title: 'Upload gagal', description: err.message || 'Operasi gagal' });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -170,7 +168,7 @@ const GalleryManager = ({ user }) => {
         sort_order: it.sort_order,
       }));
       setImages(items);
-      toast({ title: 'Publish Galeri', description: MESSAGES.PUBLISH_SUCCESS });
+      toast({ title: 'Publish Galeri', description: 'Galeri berhasil dipublish' });
     } catch (e) {
       toast({ variant: 'destructive', title: 'Publish gagal', description: e.message });
     }
@@ -212,7 +210,8 @@ const GalleryManager = ({ user }) => {
 
   const openModal = (img) => {
     setModalImage(img);
-    setRenameValue(img.name || db.formatName(img.filename) || '');
+    const base = (img.filename || '').replace(/\.[^.]+$/, '');
+    setRenameValue(img.name || base || '');
     setSeoFields({
       altText: img.altText || ''
     });
@@ -326,7 +325,7 @@ const GalleryManager = ({ user }) => {
                 </div>
 
                 <div className="absolute bottom-0 left-0 right-0 p-2 text-white text-xs space-y-1">
-                  <p className="font-semibold truncate">{db.formatName(img.name || img.filename || 'Foto')}</p>
+                  <p className="font-semibold truncate">{(img.name || (img.filename || '').replace(/\.[^.]+$/, '') || 'Foto')}</p>
                   <p className="text-white/70 truncate text-[10px]">{img.filename}</p>
                 </div>
 

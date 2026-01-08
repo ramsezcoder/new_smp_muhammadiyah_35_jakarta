@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Users, Activity } from 'lucide-react';
-import { db } from '@/lib/db';
 
 const DashboardHome = ({ user }) => {
   const [stats, setStats] = useState({
@@ -13,19 +12,23 @@ const DashboardHome = ({ user }) => {
 
   useEffect(() => {
     (async () => {
-      const news = db.getNews();
-      const regs = await db.getRegistrants();
-      const logs = db.getLogs();
-
-      const regsArray = Array.isArray(regs) ? regs : [];
-
-      setStats({
-        articles: news.length,
-        pending: news.filter(n => n.status === 'pending').length,
-        registrants: regsArray.length,
-        registrantsNew: regsArray.filter(r => r.status === 'new').length,
-        logs: logs.slice(0, 5)
-      });
+      try {
+        const res = await fetch('/api/admin/dashboard-stats.php', { credentials: 'include' });
+        if (!res.ok) throw new Error(`Stats failed: ${res.status}`);
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message || 'Stats failed');
+        const d = json.data || {};
+        setStats({
+          articles: d.articles_total ?? 0,
+          pending: d.articles_pending ?? 0,
+          registrants: d.registrants_total ?? 0,
+          registrantsNew: d.registrants_new ?? 0,
+          logs: [],
+        });
+      } catch (err) {
+        console.error('[DashboardHome] stats load failed:', err);
+        setStats({ articles: 0, pending: 0, registrants: 0, registrantsNew: 0, logs: [] });
+      }
     })();
   }, []);
 

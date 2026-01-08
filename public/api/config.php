@@ -10,10 +10,12 @@ return [
   ],
   'jwt_secret' => getenv('JWT_SECRET') ?: 'change-this-secret',
   'uploads' => [
-    'base' => dirname(__DIR__) . '/uploads',
+    'base'     => dirname(__DIR__) . '/uploads',
     'articles' => dirname(__DIR__) . '/uploads/articles',
     'gallery'  => dirname(__DIR__) . '/uploads/gallery',
     'staff'    => dirname(__DIR__) . '/uploads/staff',
+    // 'videos' key retained for directory creation only
+    // Videos use YouTube embeds (no file uploads)
     'videos'   => dirname(__DIR__) . '/uploads/videos',
   ]
 ];

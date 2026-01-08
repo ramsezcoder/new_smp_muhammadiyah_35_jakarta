@@ -6,6 +6,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
   respond(false, 'Method not allowed', [], 405);
 }
 
+// PHASE 7: Require authentication for destructive operation
+require_auth($config, ['Admin', 'Superadmin']);
+
 $input = json_decode(file_get_contents('php://input') ?: 'null', true) ?: [];
 $id = (int)($input['id'] ?? 0);
 if ($id <= 0) {

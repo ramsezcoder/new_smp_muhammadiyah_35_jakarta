@@ -4,7 +4,6 @@ import { Plus, Trash2, Pencil, GripVertical, Youtube, Video as VideoIcon, Extern
 import { useToast } from '@/components/ui/use-toast';
 import { extractYouTubeId, getYouTubeThumbnail } from '@/lib/api-utils';
 import { listVideos, createVideo, updateVideo, deleteVideo, reorderVideos } from '@/lib/videosApi';
-import { MESSAGES } from '@/config/staticMode';
 
 const VideoManager = ({ user }) => {
   const { toast } = useToast();
@@ -80,11 +79,11 @@ const VideoManager = ({ user }) => {
       if (form.id) {
         const ytId = extractYouTubeId(form.url);
         await updateVideo({ id: form.id, title: videoData.title, youtube_id: ytId, thumbnail_url: videoData.thumbnail, description: videoData.description });
-        toast({ title: 'Perubahan disimpan', description: MESSAGES.OPERATION_SUCCESS });
+        toast({ title: 'Perubahan disimpan', description: 'Operasi berhasil' });
       } else {
         const ytId = extractYouTubeId(form.url);
         await createVideo({ title: videoData.title, youtube_id: ytId, thumbnail_url: videoData.thumbnail, description: videoData.description });
-        toast({ title: 'Video ditambahkan', description: MESSAGES.OPERATION_SUCCESS });
+        toast({ title: 'Video ditambahkan', description: 'Operasi berhasil' });
       }
 
       const data = await listVideos({ includeUnpublished: true });
@@ -96,7 +95,7 @@ const VideoManager = ({ user }) => {
       toast({ 
         variant: 'destructive', 
         title: 'Gagal menyimpan', 
-        description: MESSAGES.OPERATION_FAILED 
+        description: err.message || 'Operasi gagal' 
       });
     }
   };

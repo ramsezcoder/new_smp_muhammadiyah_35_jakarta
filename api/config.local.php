@@ -9,10 +9,12 @@ return [
   ],
   'jwt_secret' => 'ganti_dengan_secret_random',
   'uploads' => [
-    'base' => dirname(__DIR__) . '/uploads',
-    'articles' => dirname(__DIR__) . '/uploads/articles',
-    'gallery'  => dirname(__DIR__) . '/uploads/gallery',
-    'staff'    => dirname(__DIR__) . '/uploads/staff',
-    'videos'   => dirname(__DIR__) . '/uploads/videos',
+    'base'     => dirname(__DIR__) . '/public/uploads',
+    'articles' => dirname(__DIR__) . '/public/uploads/articles',
+    'gallery'  => dirname(__DIR__) . '/public/uploads/gallery',
+    'staff'    => dirname(__DIR__) . '/public/uploads/staff',
+    // 'videos' key retained for directory creation only
+    // Videos use YouTube embeds (no file uploads)
+    'videos'   => dirname(__DIR__) . '/public/uploads/videos',
   ]
 ];

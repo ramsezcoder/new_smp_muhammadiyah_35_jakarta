@@ -23,6 +23,14 @@ if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
   if (!$check['ok']) {
     respond(false, $check['error'], [], 400);
   }
+  
+  // SECURITY: Ensure .htaccess protection exists in staff directory
+  $htaccessPath = rtrim($config['uploads']['staff'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . '.htaccess';
+  if (!is_file($htaccessPath)) {
+    $htaccessContent = "Options -Indexes\nphp_flag engine off\n<FilesMatch \"\\.(php|phtml|php5|phar)$\">\n  Require all denied\n</FilesMatch>\n";
+    @file_put_contents($htaccessPath, $htaccessContent);
+  }
+  
   $orig = $_FILES['photo']['name'];
   $pathinfo = pathinfo($orig);
   $ext = strtolower($pathinfo['extension'] ?? 'jpg');

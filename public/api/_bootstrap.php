@@ -34,10 +34,91 @@ if (file_exists(__DIR__ . '/config.local.php')) {
   $config = array_replace_recursive($config, require __DIR__ . '/config.local.php');
 }
 
+// Detect production environment
+$isProduction = (getenv('APP_ENV') === 'production') || (getenv('APP_ENV') === 'prod');
+$isDebug = filter_var(getenv('APP_DEBUG') ?: '0', FILTER_VALIDATE_BOOLEAN);
+
+// Production ENV validation (fail-fast)
+if ($isProduction) {
+  $requiredEnvVars = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASS', 'JWT_SECRET'];
+  $missing = [];
+  
+  foreach ($requiredEnvVars as $var) {
+    $value = getenv($var);
+    if ($value === false || $value === '') {
+      $missing[] = $var;
+    }
+  }
+  
+  if (!empty($missing)) {
+    error_log('FATAL: Missing required environment variables in production: ' . implode(', ', $missing));
+    http_response_code(500);
+    echo json_encode([
+      'success' => false,
+      'message' => 'Server configuration error',
+      'data' => []
+    ]);
+    exit(1);
+  }
+  
+  // Validate JWT secret strength
+  $jwtSecret = getenv('JWT_SECRET');
+  if (strlen($jwtSecret) < 32 || $jwtSecret === 'change-this-secret' || $jwtSecret === 'ganti_dengan_secret_random') {
+    error_log('FATAL: JWT_SECRET is weak or default in production');
+    http_response_code(500);
+    echo json_encode([
+      'success' => false,
+      'message' => 'Server configuration error',
+      'data' => []
+    ]);
+    exit(1);
+  }
+}
+
 function respond($success, $message = '', $data = [], $code = 200) {
   http_response_code($code);
   echo json_encode(['success' => (bool)$success, 'message' => $message, 'data' => $data], JSON_UNESCAPED_SLASHES);
   exit;
+}
+
+/**
+ * Production-safe error response helper
+ * 
+ * @param bool $success Response status
+ * @param string $genericMessage Generic error message for clients
+ * @param Throwable|null $exception Optional exception for logging
+ * @param int $code HTTP status code
+ */
+function respond_error(bool $success, string $genericMessage, ?Throwable $exception = null, int $code = 500) {
+  global $isProduction, $isDebug;
+  
+  // Log full exception details (always)
+  if ($exception) {
+    error_log(sprintf(
+      '[%s] %s in %s:%d',
+      get_class($exception),
+      $exception->getMessage(),
+      $exception->getFile(),
+      $exception->getLine()
+    ));
+    
+    // Log stack trace in debug mode
+    if ($isDebug) {
+      error_log('Stack trace: ' . $exception->getTraceAsString());
+    }
+  }
+  
+  // Return sanitized response to client
+  $data = [];
+  if (!$isProduction && $exception) {
+    // Dev/staging: Include exception class (but not full message/trace)
+    $data['error_type'] = get_class($exception);
+    if ($isDebug) {
+      $data['error_message'] = $exception->getMessage();
+    }
+  }
+  
+  respond($success, $genericMessage, $data, $code);
 }
 
 function db_connect(array $cfg) {
@@ -118,6 +199,8 @@ function uploads_url_path(string $subdir): string {
 
 // --- Auth helpers ---
 function get_auth_user(array $config) {
+  global $pdo;
+  
   $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
   if (!preg_match('/Bearer\s+(.*)$/i', $auth, $m)) {
     respond(false, 'Missing token', [], 401);
@@ -134,6 +217,20 @@ function get_auth_user(array $config) {
     if (!$payload || ($payload['exp'] ?? 0) < time()) {
       respond(false, 'Token expired', [], 401);
     }
+    
+    // PHASE 7: Validate token against sessions table (server-side revocation)
+    try {
+      $stmt = $pdo->prepare('SELECT id FROM sessions WHERE session_token = ? AND expires_at > NOW() LIMIT 1');
+      $stmt->execute([$token]);
+      if (!$stmt->fetch()) {
+        error_log('AUTH: Session not found or expired for token hash=' . substr($token, 0, 20));
+        respond(false, 'Session invalid or revoked', [], 401);
+      }
+    } catch (Throwable $dbError) {
+      error_log('AUTH: Session validation failed: ' . $dbError->getMessage());
+      respond(false, 'Session validation error', [], 500);
+    }
+    
     return $payload;
   } catch (Throwable $e) {
     respond(false, 'Invalid token', ['error' => $e->getMessage()], 401);
