@@ -6,41 +6,20 @@ $page = max(1, (int)($_GET['page'] ?? 1));
 $limit = min(50, max(1, (int)($_GET['limit'] ?? 10)));
 $offset = ($page - 1) * $limit;
 
-$category = trim((string)($_GET['category'] ?? ''));
-$allowedCategories = ['school', 'student'];
-$categoryFilter = in_array($category, $allowedCategories, true) ? $category : null;
-
 try {
   // Count total
-  if ($categoryFilter) {
-    $stmtCount = $pdo->prepare('SELECT COUNT(*) FROM articles WHERE status = "published" AND category = ?');
-    $stmtCount->execute([$categoryFilter]);
-  } else {
-    $stmtCount = $pdo->query('SELECT COUNT(*) FROM articles WHERE status = "published"');
-  }
+  $stmtCount = $pdo->query('SELECT COUNT(*) FROM articles WHERE status = "published"');
   $total = (int)$stmtCount->fetchColumn();
 
   // Fetch rows
-  if ($categoryFilter) {
-    $sql = 'SELECT id, title, slug, excerpt, content_html, featured_image, featured_image_alt, category, published_at, created_at
-              FROM articles
-              WHERE status = "published" AND category = ?
-              ORDER BY published_at DESC, id DESC
-              LIMIT ? OFFSET ?';
-    $stmt = $pdo->prepare($sql);
-    $stmt->bindValue(1, $categoryFilter, PDO::PARAM_STR);
-    $stmt->bindValue(2, $limit, PDO::PARAM_INT);
-    $stmt->bindValue(3, $offset, PDO::PARAM_INT);
-  } else {
-    $sql = 'SELECT id, title, slug, excerpt, content_html, featured_image, featured_image_alt, category, published_at, created_at
-              FROM articles
-              WHERE status = "published"
-              ORDER BY published_at DESC, id DESC
-              LIMIT ? OFFSET ?';
-    $stmt = $pdo->prepare($sql);
-    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
-    $stmt->bindValue(2, $offset, PDO::PARAM_INT);
-  }
+  $sql = 'SELECT id, title, slug, excerpt, content_html, featured_image, featured_image_alt, published_at, created_at
+            FROM articles
+            WHERE status = "published"
+            ORDER BY published_at DESC, id DESC
+            LIMIT ? OFFSET ?';
+  $stmt = $pdo->prepare($sql);
+  $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+  $stmt->bindValue(2, $offset, PDO::PARAM_INT);
 
   $stmt->execute();
   $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -57,7 +36,7 @@ try {
       'featuredImage' => $row['featured_image'] ? $baseUrl . $row['featured_image'] : null,
       'featuredImageAlt' => $row['featured_image_alt'],
       'authorName' => $row['author_name'] ?? null,
-      'category' => $row['category'],
+      'category' => null,
       'publishedAt' => $row['published_at'],
       'createdAt' => $row['created_at'],
     ];

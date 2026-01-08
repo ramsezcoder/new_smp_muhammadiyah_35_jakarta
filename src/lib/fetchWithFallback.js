@@ -21,7 +21,7 @@ export async function fetchNewsWithFallback(category, opts = {}) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    const params = new URLSearchParams({ category, page: String(page), limit: String(limit) });
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
     const response = await fetch(`/api/news/list.php?${params.toString()}`, {
       signal: controller.signal
     });
