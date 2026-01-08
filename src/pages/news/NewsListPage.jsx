@@ -4,7 +4,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Clock, User, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { db } from '@/lib/db';
 import { SITE_INFO } from '@/lib/seo-utils';
 import { getCategoryParam, getIntParam } from '@/utils/query';
 import { fetchNewsWithFallback } from '@/lib/fetchWithFallback';
@@ -108,31 +107,19 @@ const NewsListPage = () => {
     setLoading(true);
     setError(null);
     try {
-      // Use db.getNews() to get all merged data (including importedPosts.json)
-      const allNews = db.getNews().filter(
-        (n) => n.status === 'published' && (!n.channel || n.channel === cat)
-      );
-      
-      if (allNews.length > 0) {
-        const start = (currentPage - 1) * PAGE_SIZE;
-        const paged = allNews.slice(start, start + PAGE_SIZE);
-        setItems(paged);
-        setTotalPages(Math.max(1, Math.ceil(allNews.length / PAGE_SIZE)));
-        setPage(currentPage);
-      } else {
-        throw new Error('No news available');
-      }
+      const { items: fetchedItems, pagination } = await fetchNewsWithFallback(cat, {
+        page: currentPage,
+        limit: PAGE_SIZE,
+      });
+
+      setItems(fetchedItems);
+      setTotalPages(pagination?.pages || 1);
+      setPage(pagination?.page || currentPage);
     } catch (err) {
       console.warn('[news] fetch failed:', err);
       setError(MESSAGES.FALLBACK_NEWS);
-      
-      // Fallback to db.getNews() again as last resort
-      const all = db.getNews().filter(
-        (n) => n.status === 'published' && (!n.channel || n.channel === cat)
-      );
-      const start = (currentPage - 1) * PAGE_SIZE;
-      setItems(all.slice(start, start + PAGE_SIZE));
-      setTotalPages(Math.max(1, Math.ceil(all.length / PAGE_SIZE)));
+      setItems([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }

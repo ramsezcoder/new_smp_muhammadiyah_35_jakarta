@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, User, ArrowRight } from 'lucide-react';
-import { db } from '@/lib/db';
+import { fetchNewsWithFallback } from '@/lib/fetchWithFallback';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1509062522246-3755977927d7';
 
@@ -10,12 +10,18 @@ const NewsSection = () => {
   const [articles, setArticles] = useState([]);
 
   useEffect(() => {
-    // In a real app, db.getNews() would fetch from API
-    // We filter locally here
-    const allNews = db.getNews().filter(
-      a => a.status === 'published' && (!a.channel || a.channel === activeTab)
-    );
-    setArticles(allNews.slice(0, 4));
+    let isMounted = true;
+    fetchNewsWithFallback(activeTab, { limit: 4, page: 1 })
+      .then(({ items }) => {
+        if (isMounted) setArticles(items.slice(0, 4));
+      })
+      .catch(() => {
+        if (isMounted) setArticles([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [activeTab]);
 
   const handleReadMore = (article) => {

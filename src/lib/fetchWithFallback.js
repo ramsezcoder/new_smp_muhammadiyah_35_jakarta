@@ -10,26 +10,40 @@ const pdfData = [];
 /**
  * Fetch news with timeout and fallback to static data
  * @param {string} category - 'school' or 'student'
- * @param {number} timeout - timeout in ms
- * @returns {Promise<Array>} news articles
+ * @param {{ timeout?: number, page?: number, limit?: number }} opts
+ * @returns {Promise<{ items: Array, pagination: object }>}
  */
-export async function fetchNewsWithFallback(category, timeout = 3000) {
+export async function fetchNewsWithFallback(category, opts = {}) {
+  const timeout = opts.timeout ?? 3000;
+  const page = opts.page ?? 1;
+  const limit = opts.limit ?? 9;
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
-    
-    const response = await fetch(`/api/news/list?category=${category}`, {
+
+    const params = new URLSearchParams({ category, page: String(page), limit: String(limit) });
+    const response = await fetch(`/api/news/list?${params.toString()}`, {
       signal: controller.signal
     });
-    
+
     clearTimeout(timeoutId);
-    
+
     if (!response.ok) throw new Error('API failed');
     const payload = await response.json();
-    return payload.items || payload.data || payload.records || [];
+    const items = payload.items || payload.data || payload.records || [];
+    const pagination = payload.pagination || { page: 1, pages: 1, total: items.length };
+    return { items, pagination };
   } catch (err) {
     console.warn(`[news] API failed for category ${category}, using static data`, err);
-    return category === 'student' ? studentNews : schoolNews;
+    const fallbackItems = category === 'student' ? studentNews : schoolNews;
+    return {
+      items: fallbackItems,
+      pagination: {
+        page: 1,
+        pages: 1,
+        total: fallbackItems.length
+      }
+    };
   }
 }
 
