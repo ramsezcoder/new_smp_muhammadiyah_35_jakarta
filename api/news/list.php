@@ -21,17 +21,27 @@ try {
   $total = (int)$stmtCount->fetchColumn();
 
   // Fetch rows
-  $sql = 'SELECT id, title, slug, excerpt, content_html, featured_image, featured_image_alt, author_name, category, published_at, created_at
-          FROM articles
-          WHERE status = "published"' . ($categoryFilter ? ' AND category = ?' : '') . '
-          ORDER BY published_at DESC, id DESC
-          LIMIT :limit OFFSET :offset';
-  $stmt = $pdo->prepare($sql);
   if ($categoryFilter) {
+    $sql = 'SELECT id, title, slug, excerpt, content_html, featured_image, featured_image_alt, author_name, category, published_at, created_at
+              FROM articles
+              WHERE status = "published" AND category = ?
+              ORDER BY published_at DESC, id DESC
+              LIMIT ? OFFSET ?';
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(1, $categoryFilter, PDO::PARAM_STR);
+    $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+    $stmt->bindValue(3, $offset, PDO::PARAM_INT);
+  } else {
+    $sql = 'SELECT id, title, slug, excerpt, content_html, featured_image, featured_image_alt, author_name, category, published_at, created_at
+              FROM articles
+              WHERE status = "published"
+              ORDER BY published_at DESC, id DESC
+              LIMIT ? OFFSET ?';
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+    $stmt->bindValue(2, $offset, PDO::PARAM_INT);
   }
-  $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-  $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+
   $stmt->execute();
   $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -65,5 +75,7 @@ try {
   exit;
 } catch (Throwable $e) {
   error_log('news/list error: ' . $e->getMessage());
-  respond(false, 'Failed to fetch news', ['error' => $e->getMessage()], 500);
+  http_response_code(500);
+  echo json_encode(['success' => false, 'message' => 'Failed to fetch news'], JSON_UNESCAPED_SLASHES);
+  exit;
 }
