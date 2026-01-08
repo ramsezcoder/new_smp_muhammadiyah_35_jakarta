@@ -12,7 +12,7 @@ $where = $publishedOnly ? 'WHERE status = "published"' : '';
 
 try {
   $total = (int)$pdo->query("SELECT COUNT(*) FROM articles " . ($publishedOnly ? "WHERE status = 'published'" : ""))->fetchColumn();
-  $stmt = $pdo->prepare("SELECT id, title, slug, excerpt, featured_image, featured_image_alt, category, tags_json, status, seo_title, seo_description, author_name, published_at, created_at
+  $stmt = $pdo->prepare("SELECT id, title, slug, excerpt, content_html, featured_image, featured_image_alt, category, tags_json, status, seo_title, seo_description, author_name, published_at, created_at
                          FROM articles $where ORDER BY sort_order DESC, published_at DESC, id DESC LIMIT :limit OFFSET :offset");
   $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
   $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
