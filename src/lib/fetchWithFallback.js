@@ -22,7 +22,7 @@ export async function fetchNewsWithFallback(category, opts = {}) {
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     const params = new URLSearchParams({ category, page: String(page), limit: String(limit) });
-    const response = await fetch(`/api/news/list?${params.toString()}`, {
+    const response = await fetch(`/api/news/list.php?${params.toString()}`, {
       signal: controller.signal
     });
 
@@ -58,7 +58,7 @@ export async function fetchArticleWithFallback(slug, timeout = 3000) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     
-    const response = await fetch(`/api/news/detail/${slug}`, {
+    const response = await fetch(`/api/news/detail.php?slug=${encodeURIComponent(slug)}`, {
       signal: controller.signal
     });
     

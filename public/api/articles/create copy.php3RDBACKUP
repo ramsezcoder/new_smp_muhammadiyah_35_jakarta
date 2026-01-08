@@ -129,8 +129,8 @@ try {
     ? date('Y-m-d H:i:s')
     : null;
 
-  $stmt = $pdo->prepare(
-    'INSERT INTO articles (
+ $stmt = $pdo->prepare(
+  'INSERT INTO articles (
       title,
       slug,
       content_html,
@@ -146,25 +146,27 @@ try {
       sort_order,
       published_at
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  );
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+);
+
 
   $stmt->execute([
-    $title,
-    $slug,
-    $content,
-    $excerpt,
-    $featuredImage ?: null,
-    $featuredImageAlt,
-    $category,
-    $tags,
-    $status,
-    $seoTitle,
-    $seoDescription,
-    $user['sub'],
-    $maxSort + 1,
-    $publishedAt
-  ]);
+  $title,
+  $slug,
+  $content,
+  $excerpt !== '' ? $excerpt : null,
+  $featuredImage ?: null,
+  $featuredImageAlt,
+  $category,
+  $tags,
+  $status,
+  $seoTitle,
+  $seoDescription,
+  $user['sub'],
+  $maxSort + 1,
+  $publishedAt
+]);
+
 
   $id = (int)$pdo->lastInsertId();
 
