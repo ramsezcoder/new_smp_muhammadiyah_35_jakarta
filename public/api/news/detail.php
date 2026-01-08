@@ -34,6 +34,7 @@ try {
     'title' => $row['title'],
     'slug' => $row['slug'],
     'content' => $row['content_html'],
+    'content_html' => $row['content_html'],
     'excerpt' => $row['excerpt'],
     'featuredImage' => $row['featured_image'] ? $baseUrl . $row['featured_image'] : null,
     'featuredImageAlt' => $row['featured_image_alt'],

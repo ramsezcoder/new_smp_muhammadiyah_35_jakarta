@@ -12,7 +12,11 @@ $user = require_auth($config, ['Admin','Author','Superadmin']);
 $id = (int)($_POST['id'] ?? 0);
 $title = trim((string)($_POST['title'] ?? ''));
 $slug = trim((string)($_POST['slug'] ?? ''));
-$content = trim((string)($_POST['content'] ?? ''));
+$content = trim((string)(
+  $_POST['content']
+  ?? $_POST['content_html']
+  ?? ''
+));
 $excerpt = trim((string)($_POST['excerpt'] ?? ''));
 $category = trim((string)($_POST['category'] ?? ''));
 $tags = isset($_POST['tags']) ? json_encode((array)json_decode($_POST['tags'], true)) : '[]';
