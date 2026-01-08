@@ -22,7 +22,7 @@ try {
 
   // Fetch rows
   if ($categoryFilter) {
-    $sql = 'SELECT id, title, slug, excerpt, content_html, featured_image, featured_image_alt, author_name, category, published_at, created_at
+    $sql = 'SELECT id, title, slug, excerpt, content_html, featured_image, featured_image_alt, category, published_at, created_at
               FROM articles
               WHERE status = "published" AND category = ?
               ORDER BY published_at DESC, id DESC
@@ -32,7 +32,7 @@ try {
     $stmt->bindValue(2, $limit, PDO::PARAM_INT);
     $stmt->bindValue(3, $offset, PDO::PARAM_INT);
   } else {
-    $sql = 'SELECT id, title, slug, excerpt, content_html, featured_image, featured_image_alt, author_name, category, published_at, created_at
+    $sql = 'SELECT id, title, slug, excerpt, content_html, featured_image, featured_image_alt, category, published_at, created_at
               FROM articles
               WHERE status = "published"
               ORDER BY published_at DESC, id DESC
@@ -56,7 +56,7 @@ try {
       'content' => $row['content_html'],
       'featuredImage' => $row['featured_image'] ? $baseUrl . $row['featured_image'] : null,
       'featuredImageAlt' => $row['featured_image_alt'],
-      'authorName' => $row['author_name'],
+      'authorName' => $row['author_name'] ?? null,
       'category' => $row['category'],
       'publishedAt' => $row['published_at'],
       'createdAt' => $row['created_at'],

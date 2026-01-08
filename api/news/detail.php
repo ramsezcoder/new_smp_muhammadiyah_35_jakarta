@@ -20,7 +20,7 @@ if ($slug === null || $slug === '') {
 }
 
 try {
-  $stmt = $pdo->prepare('SELECT id, title, slug, content_html, excerpt, featured_image, featured_image_alt, author_name, category, published_at, created_at FROM articles WHERE slug = ? AND status = "published" LIMIT 1');
+  $stmt = $pdo->prepare('SELECT id, title, slug, content_html, excerpt, featured_image, featured_image_alt, category, published_at, created_at FROM articles WHERE slug = ? AND status = "published" LIMIT 1');
   $stmt->execute([$slug]);
   $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -37,7 +37,7 @@ try {
     'excerpt' => $row['excerpt'],
     'featuredImage' => $row['featured_image'] ? $baseUrl . $row['featured_image'] : null,
     'featuredImageAlt' => $row['featured_image_alt'],
-    'authorName' => $row['author_name'],
+    'authorName' => $row['author_name'] ?? null,
     'category' => $row['category'],
     'publishedAt' => $row['published_at'],
     'createdAt' => $row['created_at'],
