@@ -55,7 +55,7 @@ try {
   }
   
   // Get items - only select columns that exist in the table
-    $sql = "SELECT id, title, slug, excerpt, content_html, featured_image, featured_image_alt, category, tags_json, status, published_at, created_at
+    $sql = "SELECT id, title, slug, excerpt, content_html, featured_image, featured_image_alt, category, tags_json, status, seo_title, seo_description, published_at, created_at
       FROM articles $where ORDER BY published_at DESC, id DESC LIMIT :limit OFFSET :offset";
   $stmt = $pdo->prepare($sql);
   if (!$publishedOnly && $status !== 'all') {
